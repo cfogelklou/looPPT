@@ -1,8 +1,8 @@
 # Milestone 2: Production Kiosk Features
 
 ## Status
-- State: INTEGRATION_TEST
-- Progress: 75%
+- State: DELIVERY
+- Progress: 90%
 - Started: 2026-05-12 19:01:46 UTC
 - Pending Transition: NONE
 
@@ -153,7 +153,19 @@
   - App initialization with fake timers in Vitest requires multiple microtask flushes to move past the loading spinner state.
 
 ## Integration Test Results
-*(To be filled during INTEGRATION_TEST phase)*
+- **Build Status:** Success (TypeScript compilation and Vite production build passed).
+- **Total Tests Run:** 14
+- **Passed:** 14
+- **Failed:** 0
+- **Integration Points Verified:**
+  - **Full Lifecycle:** Verified flow from file upload to IndexedDB persistence and successful playback initialization.
+  - **Storage Management:** Verified handling of storage quota estimates and errors.
+  - **Persistence (R1):** Verified debounced slide index updates and auto-resume from last saved state.
+  - **Kiosk Mode (R3, R4):** Verified Screen Wake Lock acquisition and Fullscreen enforcement via user gesture.
+  - **Memory Stability (R7):** Verified sliding window rendering (max 3 slides in DOM).
+- **Regressions Found & Fixed:**
+  - Fixed TypeScript errors in `milestone2.test.tsx` where `isPlaying` was incorrectly passed inside the `Settings` object (it is transient state, not persisted settings).
+  - Verified no regressions in core playback or navigation logic.
 
 ## Delivery
 *(PR link, to be filled during DELIVERY phase)*

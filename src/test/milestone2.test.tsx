@@ -200,7 +200,7 @@ describe('Milestone 2: Production Kiosk Features', () => {
   it('should re-acquire wake lock on visibility change', async () => {
     render(
       <DiagnosticProvider>
-        <PlaybackProvider initialSettings={{ ...INITIAL_SETTINGS, isPlaying: true }}>
+        <PlaybackProvider initialSettings={{ ...INITIAL_SETTINGS }}>
           <Player />
         </PlaybackProvider>
       </DiagnosticProvider>
@@ -257,7 +257,7 @@ describe('Milestone 2: Production Kiosk Features', () => {
   it('should automatically advance after a slide render error', async () => {
     render(
       <DiagnosticProvider>
-        <PlaybackProvider initialSettings={{ ...INITIAL_SETTINGS, presentationId: 1, isPlaying: true, interval: 5 }}>
+        <PlaybackProvider initialSettings={{ ...INITIAL_SETTINGS, presentationId: 1, interval: 5 }}>
           <Player />
         </PlaybackProvider>
       </DiagnosticProvider>
