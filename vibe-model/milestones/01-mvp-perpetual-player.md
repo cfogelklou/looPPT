@@ -1,8 +1,8 @@
 # Milestone 1: MVP Perpetual Player
 
 ## Status
-- State: DESIGN
-- Progress: 20%
+- State: UNIT_TEST
+- Progress: 60%
 - Started: 2026-05-12 18:40:01 UTC
 - Pending Transition: NONE
 
@@ -39,7 +39,25 @@
 - **Memory:** For long-running kiosk apps, slide components should be properly unmounted or recycled to avoid memory leaks.
 
 ## Implementation Notes
-*(To be filled during IMPLEMENTATION phase)*
+### Files Created/Modified
+- `package.json`: Project metadata and dependencies (Vite 8, React 19).
+- `tsconfig.json`, `tsconfig.node.json`: TypeScript configuration (Bundler resolution).
+- `vite.config.ts`: Vite, PWA, Tailwind 4, and Vitest configuration.
+- `src/vite-env.d.ts`: Vite and PWA types.
+- `src/main.tsx`, `src/App.tsx`, `src/index.css`: Main application structure and Tailwind 4 styling.
+- `src/store/db.ts`: Dexie.js database schema for presentations (Blobs) and settings.
+- `src/store/PlaybackContext.tsx`: central `PlaybackCoordinator` using `useReducer` and Context.
+- `src/components/Uploader.tsx`: PPTX upload UI with progress feedback and storage quota validation.
+- `src/components/Player.tsx`: PPTX rendering engine using `SlideView` and manual navigation controls.
+- `src/test/setup.ts`, `src/test/smoke.test.tsx`, `src/store/PlaybackContext.test.tsx`: Test infrastructure and coverage for core logic.
+
+### Deviations from Design
+- **Tailwind 4:** Used the latest Tailwind 4 with `@tailwindcss/vite` instead of the legacy PostCSS setup for better performance and simpler configuration.
+- **Granular Rendering:** Used `parsePPTX` and `SlideView` directly instead of high-level components for better control over the playback loop and transitions.
+
+### Known Limitations
+- Initial version focuses on static slide rendering; complex animations or embedded media support depends on `@kandiforge/pptx-renderer` capabilities.
+- Quota check is based on `navigator.storage.estimate()`, which may be restricted in some browser environments or incognito modes.
 
 ## Unit Test Results
 *(To be filled during UNIT_TEST phase)*

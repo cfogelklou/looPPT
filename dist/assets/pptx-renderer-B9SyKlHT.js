@@ -1,0 +1,1 @@
+var e={};throw Error(`Could not resolve "canvas" imported by "@kandiforge/pptx-renderer". Is it installed?`);export{e as default};
