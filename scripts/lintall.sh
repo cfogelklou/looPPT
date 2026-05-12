@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# lintall.sh - Lint all components of perpetual-presentation
+# Runs ESLint and TypeScript checks
+
 # Colors
 GREEN='\033[0;32m'
 BLUE='\033[0;34m'
@@ -27,17 +30,16 @@ run_step() {
     fi
 }
 
-echo -e "${BLUE}=== Perpetual Presentation Sanity Check ===${NC}\n"
+echo -e "${BLUE}=== Perpetual Presentation Lint Check ===${NC}\n"
 
 cd "$PROJECT_ROOT"
 
-run_step "Lint & TypeScript"      "bash scripts/lintall.sh"
-run_step "Tests"                  "bun run test:run"
-run_step "Production build"       "bun run build"
+run_step "ESLint"                 "bun run lint"
+run_step "TypeScript check"       "tsc --noEmit"
 
 echo "==============================="
 if [ $FAILURES -eq 0 ]; then
-    echo -e "${GREEN}=== All sanity checks passed! ===${NC}"
+    echo -e "${GREEN}=== All lint checks passed! ===${NC}"
     exit 0
 else
     echo -e "${RED}${FAILURES} step(s) failed:${NC}"
