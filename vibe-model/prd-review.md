@@ -1,8 +1,8 @@
-# PRD Review - Iteration 3
+# PRD Review - Iteration 1
 
-**Overall Status:** ✅ APPROVED
+**Overall Status:** ❌ NEEDS REVISION
 
-**Timestamp:** 2026-05-12T18:40:01.002Z
+**Timestamp:** 2026-05-12T18:54:29.873Z
 
 ## ARCHITECTURE Review ✅
 
@@ -10,21 +10,24 @@
 
 ### Findings
 
-- [MINOR] Rendering pipeline undescribed. "Binary blob in IndexedDB → rendered slide on screen" is the core data flow but never specified. Is pptx-renderer rendering to canvas/DOM/images? Are slides pre-rendered or on-demand? For kiosk smoothness, pre-render strategy matters. Doesn't need full design here, but a one-liner clarifying the render model would strengthen architecture section.
-- [MINOR] No memory strategy for large decks. 100-slide deck with high-res images — are all slides held in memory? Lazy render? Eviction policy? Kiosk runs 24/7; memory leaks or unbounded cache would cause eventual tab crash. Worth noting in architecture even if deferred to implementation.
-- [MINOR] `@^3.3.0` is not a version pin — previous review asked for pin, `^` allows minor bumps. Acceptable during active development but PRD says "version pin." Either pin to `3.3.x` explicitly or drop the claim.
+- [MINOR] Rendering pipeline unspecified. PRD says `@kandiforge/pptx-renderer` "handles conversion" but doesn't clarify render target (canvas, DOM, SVG, images). Code shows `SlideView` component rendering to DOM — this is the core data flow. A one-liner clarifying render model strengthens architecture section. Not blocking since code already exists and works.
+- [MINOR] No memory/eviction strategy for long-running kiosk. `Player.tsx:9` stores entire parsed `PPTXData` in state for lifetime of component. For 100+ slide decks with images, this is unbounded memory. Kiosk runs 24/7 — tab crash inevitable without eviction. Architecture section should note lazy vs eager rendering decision. Not blocking since M2 can address.
+- [MINOR] `PlaybackContext.tsx:86-92` persists every slide change to IndexedDB on every tick. Write frequency = 1 write per `interval` seconds while playing. For 5s interval over 24h, that's ~17K writes/day. Should be debounced or persisted only on pause/stop. Architecture section should note persistence strategy. Not blocking.
+- [MINOR] Tailwind + MUI both in stack creates styling ambiguity. Code already uses both (`Player.tsx` uses Tailwind classes, MUI listed in deps). No guidance on which to use where. Minor since codebase is small and consistent so far.
+- [MINOR] Milestone 2 depends on Milestone 1's Playback Coordinator for Wake Lock integration, but no explicit interface contract described. `usePlayback` hook is the de facto coordinator — acceptable since implementation already exists. Dependency ordering is correct (M1 core → M2 kiosk features).
+- [MINOR] PWA service worker strategy not specified. `vite-plugin-pwa` supports multiple strategies (GenerateSW, InjectManifest). For offline-first kiosk, cache strategy matters. Not blocking — defaults likely work for MVP.
 
-## TESTABILITY Review ✅
+## TESTABILITY Review ❌
 
-**Score:** +2
+**Score:** -1
 
 ### Findings
 
-- [MINOR] Testing strategy progression is one sentence in Review Response. Doesn't specify which components get unit vs integration tests, or how browser API mocking (Wake Lock, Fullscreen) will be handled in M2. A brief table mapping test type to milestone would strengthen it.
-- [MINOR] No test data/fixtures strategy. PPTX rendering tests need fixture files — no mention of where they come from (committed assets, generated mocks, etc.).
-- [MINOR] No CI test gate. AC 1.1 says `npm test` works but no AC or task mentions running tests in CI or blocking merge on failure.
-- [MINOR] ACs don't distinguish automated vs manual verification. "Triple-tap gesture toggles settings" (AC 2.2) is hard to automate — should note which ACs need manual QA.
-- [MINOR] No longevity/reliability test consideration for kiosk context. App targets 24/7 unattended operation but no AC covers memory leak or multi-hour loop stability.
+- [MAJOR] Milestone 1 does not explicitly include testing infrastructure setup. "Core infrastructure, Dexie schema, PPTX upload UI, and basic looping playback logic" — no mention of Vitest config, test helpers, mock factories for Dexie/PPTX renderer, or CI test runner. First milestone should establish test harness so subsequent milestones build on tested ground.
+- [MAJOR] No acceptance criteria defined for either milestone. "Basic looping playback logic" is unverifiable — what constitutes "basic"? Acceptance criteria needed: e.g., "given one PPTX uploaded, player loops from last slide back to first with configurable interval."
+- [MAJOR] No testing strategy progression. PRD lists Vitest + RTL in tech stack but never describes what gets tested when. Missing: unit test scope (Dexie schema, playback coordinator logic), integration test scope (upload → persist → render loop), E2E scope (full kiosk cycle with power interrupt). Without this, milestones lack verifiable gates.
+- [MINOR] Wake Lock and Fullscreen APIs are notoriously hard to test in jsdom. Milestone 2 should note mocking strategy for `navigator.wakeLock` and `Element.requestFullscreen` — otherwise acceptance testing becomes manual-only.
+- [MINOR] Dexie.js with IndexedDB needs special test setup (fake-indexeddb or Dexie's test utilities). No mention of this dependency, risk of flaky tests or skipped tests.
 
 ## UX Review ✅
 
@@ -32,11 +35,10 @@
 
 ### Findings
 
-- [MINOR] Triple-tap gesture for operator overlay lacks discoverability. Kiosk operators won't intuitively know this exists. Consider a brief onboarding tooltip on first launch, or a visible (but unobtrusive) affordance like a corner hotspot that reveals on hover/long-press.
-- [MINOR] Auto-resume says "saves last viewed slide index and restores on startup" but doesn't specify UX when persisted state is stale (e.g., PPTX was replaced with a deck having fewer slides). Should clamp to valid range or reset to slide 1.
-- [MINOR] Accessibility section mentions ARIA labels and high-contrast but omits focus management strategy for the settings overlay. When overlay opens via triple-tap, where does focus go? When it closes, where does focus return? Critical for keyboard-only operators.
-- [MINOR] Error states reference "actionable steps for the operator" but no examples given. For a kiosk context, actionable steps should be concrete (e.g., "Re-upload file", "Check storage", "Restart app"). Vague error messages erode operator trust.
-- [MINOR] Manual navigation controls (Next/Prev) in AC 1.4 don't specify whether these are keyboard-only, on-screen buttons, or both. For kiosk viewers who may interact, touch targets and visibility matter. Clarify which persona uses these controls and how.
-- [MINOR] No mention of reduced-motion preference support. Kiosk displays may be in environments where constant slide transitions are distracting. `prefers-reduced-motion` should pause auto-advance or reduce transition effects.
-- [MINOR] Settings panel range (1s–3600s) is large. No guidance on default value or UX for picking values (slider, number input, preset buttons). Poor slider UX at this range — hard to pick 5s vs 10s precisely.
+- [MINOR] **No user journey defined.** PRD lists tech stack and milestones but no user flows. What happens when kiosk boots? What's the first-screen experience? Upload → configure → play sequence should be documented. Not blocking since milestones imply a clear incremental build.
+- [MINOR] **Accessibility for kiosk context unclear.** Kiosk implies unattended operation, but no mention of: what happens if screen reader users encounter it, contrast requirements for varied lighting, or touch target sizing for potential touch kiosks. Low severity since kiosk mode typically locks down interaction.
+- [MINOR] **Error handling for PPTX rendering failures absent.** `@kandiforge/pptx-renderer` will fail on corrupted/unsupported files. No fallback UX described (skip slide? show placeholder? alert?). Should specify behavior for: corrupt upload, unsupported slide content, renderer crash mid-loop.
+- [MINOR] **No offline-first edge case coverage.** PRD says "offline-first" but doesn't address: what if IndexedDB quota is exceeded, what if upload is interrupted mid-write, what if service worker cache becomes stale after app update. These are the most common kiosk failure modes.
+- [MINOR] **Wake Lock / Fullscreen failure modes unspecified.** Browsers can deny both APIs. No fallback described — does the screen just dim? Does a "tap to wake" message appear? Critical for kiosk reliability but acceptable at PRD level since Milestone 2 covers it.
+- [MINOR] **Settings panel scope undefined.** Milestone 2 mentions "settings panel" but no detail on what's configurable. Loop speed? Slide order? Transition type? Volume? Users need to know what they can adjust.
 
