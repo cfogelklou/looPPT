@@ -33,8 +33,8 @@ export function PptxPlayer() {
               const parsed = await parsePPTX(buffer);
               setData(parsed);
               dispatch({ type: 'SET_TOTAL_SLIDES', totalSlides: parsed.slides.length });
-            } catch (err: any) {
-              const msg = `Failed to parse PPTX file: ${err.message}`;
+            } catch (err: unknown) {
+              const msg = `Failed to parse PPTX file: ${err instanceof Error ? err.message : String(err)}`;
               setError(msg);
               logError(msg);
             }
@@ -42,8 +42,8 @@ export function PptxPlayer() {
             setError('Presentation not found in storage.');
           }
         })
-        .catch((err: any) => {
-          const msg = `Database error: ${err.message}`;
+        .catch((err: unknown) => {
+          const msg = `Database error: ${err instanceof Error ? err.message : String(err)}`;
           setError(msg);
           logError(msg);
         })
@@ -63,7 +63,7 @@ export function PptxPlayer() {
     return Array.from(new Set([prev, current, next]));
   }, [data, state.currentSlide]);
 
-  const handleRenderError = useCallback((slideIndex: number, err: any) => {
+  const handleRenderError = useCallback((slideIndex: number, err: Error) => {
     const msg = `Slide ${slideIndex} render error: ${err.message}`;
     logError(msg);
   }, [logError]);

@@ -1,7 +1,7 @@
-import { render, screen, act, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, act, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { PlaybackProvider, usePlayback } from '../store/PlaybackContext';
-import { db, INITIAL_SETTINGS, ensureSettings } from '../store/db';
+import { db, INITIAL_SETTINGS } from '../store/db';
 import { Player } from '../components/Player';
 import { DiagnosticProvider } from '../store/DiagnosticContext';
 import App from '../App';
@@ -38,7 +38,7 @@ vi.mock('@kandiforge/pptx-renderer', () => ({
     slides: Array.from({ length: 50 }, (_, i) => ({ id: i })),
     size: { width: 100, height: 100 }
   }),
-  SlideView: ({ slide, onRenderError }: any) => (
+  SlideView: ({ slide, onRenderError }: { slide: { id: number }; onRenderError: (err: Error) => void }) => (
     <div data-testid="slide-view">
       Slide {slide.id}
       <button onClick={() => onRenderError(new Error('Test Error'))}>Trigger Error</button>
@@ -88,14 +88,6 @@ Object.defineProperty(navigator, 'wakeLock', {
   configurable: true
 });
 
-Object.defineProperty(document, 'fullscreenElement', {
-  value: null,
-  writable: true,
-  configurable: true
-});
-
-document.documentElement.requestFullscreen = vi.fn().mockResolvedValue(undefined);
-
 const TestComponent = () => {
   const { state, dispatch } = usePlayback();
   return (
@@ -111,7 +103,6 @@ describe('Milestone 2: Production Kiosk Features', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.useFakeTimers();
-    (document as any).fullscreenElement = null;
   });
 
   // TS-1: Persistence Debounce
@@ -222,7 +213,7 @@ describe('Milestone 2: Production Kiosk Features', () => {
 
   // TS-5: Fullscreen Enforcement
   it('should show KioskEntryOverlay when not in fullscreen', async () => {
-    (document as any).fullscreenElement = null;
+    (document as { fullscreenElement: Element | null }).fullscreenElement = null;
     
     render(
       <DiagnosticProvider>

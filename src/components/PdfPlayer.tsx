@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo, useRef } from 'react';
 import * as pdfjsLib from 'pdfjs-dist';
-import type { PDFDocumentProxy } from 'pdfjs-dist';
+import type { PDFDocumentProxy, RenderTask, PDFPageProxy } from 'pdfjs-dist';
 import { usePlayback } from '../store/PlaybackContext';
 import { db } from '../store/db';
 import { PlayerShell } from './PlayerShell';
@@ -20,7 +20,7 @@ export function PdfPlayer() {
   const [dimensions, setDimensions] = useState({ width: window.innerWidth, height: window.innerHeight });
 
   const canvasRefs = useRef<Map<number, HTMLCanvasElement>>(new Map());
-  const renderTasks = useRef<Map<number, { task: any; page: any }>>(new Map());
+  const renderTasks = useRef<Map<number, { task: RenderTask; page: PDFPageProxy }>>(new Map());
   const containerRef = useRef<HTMLDivElement>(null);
   const resizeTimer = useRef<number | null>(null);
 
@@ -37,8 +37,8 @@ export function PdfPlayer() {
               const doc = await pdfjsLib.getDocument({ data: buffer }).promise;
               setPdfDoc(doc);
               dispatch({ type: 'SET_TOTAL_SLIDES', totalSlides: doc.numPages });
-            } catch (err: any) {
-              const msg = `Failed to parse PDF file: ${err.message}`;
+            } catch (err: unknown) {
+              const msg = `Failed to parse PDF file: ${err instanceof Error ? err.message : String(err)}`;
               setError(msg);
               logError(msg);
             }
@@ -46,8 +46,8 @@ export function PdfPlayer() {
             setError('Presentation not found in storage.');
           }
         })
-        .catch((err: any) => {
-          const msg = `Database error: ${err.message}`;
+        .catch((err: unknown) => {
+          const msg = `Database error: ${err instanceof Error ? err.message : String(err)}`;
           setError(msg);
           logError(msg);
         })
@@ -95,7 +95,7 @@ export function PdfPlayer() {
     const activeKeys = new Set(visibleIndices);
     for (const [idx, { task, page }] of renderTasks.current) {
       if (!activeKeys.has(idx)) {
-        task.cancel().catch(() => {});
+        task.cancel();
         page.cleanup();
         renderTasks.current.delete(idx);
       }
@@ -115,7 +115,7 @@ export function PdfPlayer() {
       // Cancel previous render for this page
       const existing = renderTasks.current.get(idx);
       if (existing) {
-        existing.task.cancel().catch(() => {});
+        existing.task.cancel();
         existing.page.cleanup();
       }
 
@@ -133,18 +133,20 @@ export function PdfPlayer() {
         canvas.style.height = `${Math.floor(viewport.height)}px`;
 
         const task = page.render({ canvas, viewport });
+        if (!task) return;
         renderTasks.current.set(idx, { task, page });
 
-        task.promise.catch((err: any) => {
-          if (err.name !== 'RenderingCancelledException') {
-            const msg = `Page ${idx + 1} render error: ${err.message}`;
+        task.promise.catch((err: unknown) => {
+          const errName = (err as { name?: string })?.name;
+          if (errName !== 'RenderingCancelledException') {
+            const msg = `Page ${idx + 1} render error: ${err instanceof Error ? err.message : String(err)}`;
             logError(msg);
           }
         }).finally(() => {
           renderTasks.current.delete(idx);
         });
-      }).catch((err: any) => {
-        const msg = `Page ${idx + 1} load error: ${err.message}`;
+      }).catch((err: unknown) => {
+        const msg = `Page ${idx + 1} load error: ${err instanceof Error ? err.message : String(err)}`;
         logError(msg);
       });
     }

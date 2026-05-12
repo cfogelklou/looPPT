@@ -2,7 +2,6 @@ import React, { ReactNode } from 'react';
 import { usePlayback } from '../store/PlaybackContext';
 import { ChevronLeft, ChevronRight, Play, Pause, RefreshCcw, AlertCircle, AlertTriangle } from 'lucide-react';
 import { SettingsOverlay } from './SettingsOverlay';
-import { KioskEntryOverlay } from './KioskEntryOverlay';
 
 interface PlayerShellProps {
   isLoading: boolean;
@@ -32,7 +31,6 @@ export function PlayerShell({ isLoading, error, warning, children }: PlayerShell
   return (
     <div className="relative w-full h-full bg-black flex flex-col items-center justify-center overflow-hidden group">
       <SettingsOverlay />
-      <KioskEntryOverlay />
 
       {isLoading && (
         <div className="absolute inset-0 flex items-center justify-center bg-black/50 z-20">

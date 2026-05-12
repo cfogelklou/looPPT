@@ -3,11 +3,10 @@ import App from '../App';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import React from 'react';
 import { db } from '../store/db';
-import * as pptxRenderer from '@kandiforge/pptx-renderer';
 
 // Mock Dexie
 vi.mock('../store/db', async (importOriginal) => {
-  const actual = await importOriginal() as any;
+  const actual = await importOriginal() as Record<string, unknown>;
   return {
     ...actual,
     db: {
@@ -37,7 +36,7 @@ vi.mock('@kandiforge/pptx-renderer', () => ({
     slides: [{}, {}, {}],
     size: { width: 100, height: 100 }
   }),
-  SlideView: ({ slide }: any) => <div data-testid="slide-view">Slide</div>,
+  SlideView: (..._args: unknown[]) => <div data-testid="slide-view">Slide</div>,
 }));
 
 // Mock navigator.storage
@@ -93,7 +92,7 @@ describe('LooPPT Integration Flow', () => {
 
   it('handles storage quota errors during upload', async () => {
     // Mock insufficient storage
-    (navigator.storage.estimate as any).mockResolvedValueOnce({ quota: 1000, usage: 900 });
+    (navigator.storage.estimate as ReturnType<typeof vi.fn>).mockResolvedValueOnce({ quota: 1000, usage: 900 });
     
     render(<App />);
     
