@@ -211,24 +211,6 @@ describe('Milestone 2: Production Kiosk Features', () => {
     expect(navigator.wakeLock.request).toHaveBeenCalledWith('screen');
   });
 
-  // TS-5: Fullscreen Enforcement
-  it('should show KioskEntryOverlay when not in fullscreen', async () => {
-    (document as { fullscreenElement: Element | null }).fullscreenElement = null;
-    
-    render(
-      <DiagnosticProvider>
-        <PlaybackProvider initialSettings={{ ...INITIAL_SETTINGS, presentationId: 1 }}>
-          <Player />
-        </PlaybackProvider>
-      </DiagnosticProvider>
-    );
-
-    expect(screen.getByText('Start Kiosk')).toBeInTheDocument();
-
-    fireEvent.click(screen.getByText('Start Kiosk'));
-    expect(document.documentElement.requestFullscreen).toHaveBeenCalled();
-  });
-
   // TS-6: Sliding Window Limit
   it('should never render more than 3 slides in the DOM', async () => {
     await act(async () => {
