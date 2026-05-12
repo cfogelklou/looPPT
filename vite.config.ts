@@ -16,24 +16,29 @@ export default defineConfig({
     }),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.ico'],
+      includeAssets: ['favicon.ico', 'icon.svg'],
       manifest: {
         name: 'LooPPT - Perpetual Presentation',
         short_name: 'LooPPT',
-        description: 'Perpetual PPTX Player for Kiosks',
+        description: 'Perpetual Presentation Player for Kiosks',
         theme_color: '#000000',
         start_url: '/perpetual-presentation/',
         scope: '/perpetual-presentation/',
         icons: [
           {
-            src: 'pwa-192x192.png',
+            src: 'icon-192x192.png',
             sizes: '192x192',
             type: 'image/png'
           },
           {
-            src: 'pwa-512x512.png',
+            src: 'icon-512x512.png',
             sizes: '512x512',
             type: 'image/png'
+          },
+          {
+            src: 'icon.svg',
+            sizes: 'any',
+            type: 'image/svg+xml'
           }
         ],
         display: 'standalone'
