@@ -74,8 +74,8 @@ describe('LooPPT Integration Flow', () => {
 
     // 4. Verify Player is rendered
     // The App should switch from Uploader to Player once presentationId is set in context
-    const slideView = await screen.findByTestId('slide-view');
-    expect(slideView).toBeInTheDocument();
+    const slideViews = await screen.findAllByTestId('slide-view');
+    expect(slideViews.length).toBeGreaterThan(0);
     
     // 5. Verify Slide Count
     const slideCount = screen.getByText('1 / 3');

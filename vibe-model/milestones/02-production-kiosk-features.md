@@ -1,8 +1,8 @@
 # Milestone 2: Production Kiosk Features
 
 ## Status
-- State: IMPLEMENTATION
-- Progress: 40%
+- State: UNIT_TEST
+- Progress: 60%
 - Started: 2026-05-12 19:01:46 UTC
 - Pending Transition: NONE
 
@@ -116,7 +116,23 @@
 - A sliding window approach (rendering only N slides around the current one) is critical for long-term stability.
 
 ## Implementation Notes
-*(To be filled during IMPLEMENTATION phase)*
+### Files Created/Modified:
+- `vite.config.ts`: Added base path, PWA manifest updates, and `vite-plugin-node-polyfills`.
+- `src/store/PlaybackContext.tsx`: Implemented 500ms debounced persistence for slide index and interval.
+- `src/store/DiagnosticContext.tsx`: Created ring buffer (max 100) for error logging.
+- `src/hooks/useWakeLock.ts`: Created hook for Screen Wake Lock API with re-acquisition on visibility change.
+- `src/components/SettingsOverlay.tsx`: MUI-based settings panel for interval, fullscreen, and storage usage.
+- `src/components/KioskEntryOverlay.tsx`: Prompt for fullscreen user gesture.
+- `src/components/Player.tsx`: Implemented sliding window rendering (prev, current, next) and error failover logic.
+- `src/App.tsx`: Added periodic (1h) Service Worker update check and DiagnosticProvider.
+- `src/test/milestone2.test.tsx`: Added unit tests for TS-1 and TS-6.
+
+### Deviations:
+- None.
+
+### Limitations:
+- Screen Wake Lock only works in secure contexts (HTTPS/localhost).
+- Storage estimation is an estimate and may vary by browser.
 
 ## Unit Test Results
 *(To be filled during UNIT_TEST phase)*

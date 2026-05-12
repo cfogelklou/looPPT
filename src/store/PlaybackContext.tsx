@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useReducer, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useReducer, useEffect, ReactNode, useRef } from 'react';
 import { db, Settings } from './db';
 
 export interface PlaybackState {
@@ -11,7 +11,7 @@ export interface PlaybackState {
 }
 
 export type PlaybackAction =
-  | { type: 'SET_PRESENTATION'; id: number; totalSlides: number }
+  | { type: 'SET_PRESENTATION'; id: number; totalSlides: number; currentSlide?: number }
   | { type: 'SET_TOTAL_SLIDES'; totalSlides: number }
   | { type: 'NEXT_SLIDE' }
   | { type: 'PREV_SLIDE' }
@@ -30,7 +30,12 @@ const initialState: PlaybackState = {
 function playbackReducer(state: PlaybackState, action: PlaybackAction): PlaybackState {
   switch (action.type) {
     case 'SET_PRESENTATION':
-      return { ...state, presentationId: action.id, totalSlides: action.totalSlides, currentSlide: 0 };
+      return { 
+        ...state, 
+        presentationId: action.id, 
+        totalSlides: action.totalSlides, 
+        currentSlide: action.currentSlide ?? 0 
+      };
     case 'SET_TOTAL_SLIDES':
       return { ...state, totalSlides: action.totalSlides };
     case 'NEXT_SLIDE':
@@ -69,6 +74,8 @@ export function PlaybackProvider({ children, initialSettings }: { children: Reac
     presentationId: initialSettings.presentationId,
   });
 
+  const saveTimeoutRef = useRef<number | null>(null);
+
   // Auto-advance timer
   useEffect(() => {
     let timer: number | undefined;
@@ -82,13 +89,25 @@ export function PlaybackProvider({ children, initialSettings }: { children: Reac
     };
   }, [state.isPlaying, state.interval, state.totalSlides, state.currentSlide]);
 
-  // Persist current slide
+  // Debounced Persistence (R1)
   useEffect(() => {
-    db.settings.update('current', { 
-      currentSlide: state.currentSlide,
-      interval: state.interval,
-      presentationId: state.presentationId
-    }).catch(console.error);
+    if (saveTimeoutRef.current) {
+      window.clearTimeout(saveTimeoutRef.current);
+    }
+
+    saveTimeoutRef.current = window.setTimeout(() => {
+      db.settings.update('current', { 
+        currentSlide: state.currentSlide,
+        interval: state.interval,
+        presentationId: state.presentationId
+      }).catch(console.error);
+    }, 500);
+
+    return () => {
+      if (saveTimeoutRef.current) {
+        window.clearTimeout(saveTimeoutRef.current);
+      }
+    };
   }, [state.currentSlide, state.interval, state.presentationId]);
 
   return (

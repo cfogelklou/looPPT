@@ -1,12 +1,32 @@
 import React, { useEffect, useState } from 'react';
 import { ensureSettings, type Settings } from './store/db';
 import { PlaybackProvider, usePlayback } from './store/PlaybackContext';
+import { DiagnosticProvider } from './store/DiagnosticContext';
 import { Player } from './components/Player';
 import { Uploader } from './components/Uploader';
 import { Layout } from 'lucide-react';
+import { useRegisterSW } from 'virtual:pwa-register/react';
 
 function AppContent() {
   const { state } = usePlayback();
+  const { updateServiceWorker } = useRegisterSW({
+    onNeedRefresh() {
+      // R5: Auto-apply updates
+      updateServiceWorker(true);
+    },
+  });
+
+  // R5: Periodically check for updates (every 1 hour)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (navigator.onLine) {
+        // This will trigger onNeedRefresh if an update is found
+        updateServiceWorker();
+      }
+    }, 60 * 60 * 1000);
+
+    return () => clearInterval(interval);
+  }, [updateServiceWorker]);
 
   if (!state.presentationId) {
     return (
@@ -44,8 +64,10 @@ export default function App() {
   }
 
   return (
-    <PlaybackProvider initialSettings={initialSettings}>
-      <AppContent />
-    </PlaybackProvider>
+    <DiagnosticProvider>
+      <PlaybackProvider initialSettings={initialSettings}>
+        <AppContent />
+      </PlaybackProvider>
+    </DiagnosticProvider>
   );
 }
