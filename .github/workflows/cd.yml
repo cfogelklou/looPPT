@@ -1,0 +1,47 @@
+name: Build and Deploy
+
+on:
+  push:
+    branches: ["main", "devel"]
+  pull_request:
+    branches:
+      - "*"
+  workflow_dispatch:
+
+env:
+  RELEASE: release
+  ID_ED25519: ${{ secrets.ID_ED25519 }}
+  CI: true
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: |
+          bun install
+
+      - name: Run sanity checks
+        run: |
+          ./scripts/sanity_checks.sh
+
+      - name: Upload
+        if: github.event_name == 'push' && (github.ref == 'refs/heads/devel' || github.ref == 'refs/heads/main')
+        run: |
+          echo "$ID_ED25519" > id_ed25519
+          chmod 600 id_ed25519
+          sftp -o IdentityFile="./id_ed25519" -o "StrictHostKeyChecking=no" -b ./scripts/batchfile_sftp.txt cfg90a6nm_ssh@ssh.cfg90a6nm.service.one
+          rm id_ed25519

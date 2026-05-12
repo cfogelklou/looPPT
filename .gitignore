@@ -1,0 +1,12 @@
+node_modules/
+dist/
+.vite/
+.vitest/
+coverage/
+*.log
+*.tsbuildinfo
+.DS_Store
+test.pdf
+test.pptx
+.playwright-mcp/
+*.png
