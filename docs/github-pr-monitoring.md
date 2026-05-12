@@ -155,7 +155,8 @@ git checkout -B {BRANCH_NAME} origin/{BRANCH_NAME} --force
 # 2. Fix the issue locally
 
 # 3. Run sanity checks
-./scripts/sanity_checks.sh
+./scripts/lintall.sh        # ESLint + TypeScript check
+./scripts/sanity_checks.sh  # Full check (lint + tests + build)
 
 # 4. Commit and push
 git add .
@@ -306,7 +307,7 @@ gh pr merge {PR_NUMBER} --merge
 
 1. **Don't blindly accept all comments** — Verify if issues exist in current code and align with project guidelines. If a comment is incorrect or outdated, politely explain why with technical justification.
 
-2. **Always test locally before pushing** — Use `./scripts/sanity_checks.sh` to catch issues before pushing.
+2. **Always test locally before pushing** — Use `./scripts/lintall.sh` (quick) or `./scripts/sanity_checks.sh` (full) to catch issues before pushing.
 
 3. **Keep polling** — GitHub Actions may flake. If a check fails without local changes, simply re-run it via the GitHub UI or wait for the next automatic run.
 
