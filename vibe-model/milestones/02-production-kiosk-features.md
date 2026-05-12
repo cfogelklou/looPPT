@@ -1,8 +1,8 @@
 # Milestone 2: Production Kiosk Features
 
 ## Status
-- State: UNIT_TEST
-- Progress: 60%
+- State: INTEGRATION_TEST
+- Progress: 75%
 - Started: 2026-05-12 19:01:46 UTC
 - Pending Transition: NONE
 
@@ -135,7 +135,22 @@
 - Storage estimation is an estimate and may vary by browser.
 
 ## Unit Test Results
-*(To be filled during UNIT_TEST phase)*
+- **Total Tests Run:** 14
+- **Passed:** 14
+- **Failed:** 0
+- **Traceability Matrix:**
+  - TS-1: Persistence Debounce → `should debounce database updates for slide changes` → Pass
+  - TS-2: Auto-Resume → `should resume from the last saved slide` → Pass
+  - TS-3: Settings Accessibility → `should have accessible touch targets in settings` → Pass
+  - TS-4: Wake Lock Recovery → `should re-acquire wake lock on visibility change` → Pass
+  - TS-5: Fullscreen Enforcement → `should show KioskEntryOverlay when not in fullscreen` → Pass
+  - TS-6: Sliding Window Limit → `should never render more than 3 slides in the DOM` → Pass
+  - TS-7: Error Failover → `should automatically advance after a slide render error` → Pass
+  - TS-8: Periodic Update Check → `should check for updates every hour` → Pass
+
+- **Edge Cases Discovered:**
+  - Found redundant `setTimeout` in `Player.tsx` that caused double advancement during rendering errors when playback was active. Fixed by relying on the global timer in `PlaybackContext`.
+  - App initialization with fake timers in Vitest requires multiple microtask flushes to move past the loading spinner state.
 
 ## Integration Test Results
 *(To be filled during INTEGRATION_TEST phase)*

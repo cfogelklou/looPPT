@@ -73,12 +73,9 @@ export function Player() {
     const msg = `Slide ${slideIndex} render error: ${err.message}`;
     logError(msg);
     
-    if (state.isPlaying) {
-      setTimeout(() => {
-        dispatch({ type: 'NEXT_SLIDE' });
-      }, state.interval * 1000);
-    }
-  }, [dispatch, logError, state.isPlaying, state.interval]);
+    // The global playback timer in PlaybackContext will handle advancement
+    // if state.isPlaying is true. We don't want to double-advance.
+  }, [logError]);
 
   if (!state.presentationId) return null;
 
