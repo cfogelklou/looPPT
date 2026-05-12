@@ -1,8 +1,8 @@
 # Milestone 2: Production Kiosk Features
 
 ## Status
-- State: DESIGN
-- Progress: 20%
+- State: IMPLEMENTATION
+- Progress: 40%
 - Started: 2026-05-12 19:01:46 UTC
 - Pending Transition: NONE
 
@@ -44,10 +44,56 @@
   - Resolve Vite build warning regarding Node `buffer` externalization from `@kandiforge/pptx-renderer` to ensure reliable browser runtime playback.
 
 ## Design
-*(To be filled during DESIGN phase)*
+
+### D1: Persistence & State (R1)
+- **Debounced Save:** Implement a `useDebouncedEffect` or similar logic in `PlaybackProvider` specifically for the `currentSlide` persistence. This ensures that rapid slide changes (e.g., user skipping) don't spam IndexedDB.
+- **Initialization Logic:** The `ensureSettings` utility in `db.ts` will be used by the `main.tsx` or a top-level loader to fetch last-known state before mounting the `PlaybackProvider`.
+
+### D2: Settings Panel UI (R2)
+- **Component:** `SettingsOverlay`. A slide-in drawer or centered dialog built with Material UI components.
+- **Inputs:** Use MUI `Slider` for interval control (1-60s) and `Switch` for Fullscreen.
+- **Storage API:** Use `navigator.storage.estimate()` to retrieve `usage` and `quota`, displaying percentage and absolute values.
+- **A11y:** All buttons/inputs will have `min-height: 44px` and appropriate `aria-labels`.
+
+### D3: Screen Wake Lock Logic (R3)
+- **Hook:** `useWakeLock`.
+- **Lifecycle:**
+  - Request lock in a `useEffect` triggered when `isPlaying` becomes true.
+  - Monitor `visibilitychange`: if `document.visibilityState === 'visible'` and playback is active, re-request the lock.
+  - Store the `WakeLockSentinel` in a `ref`. Listen for its `release` event to update an `isWakeLocked` status in the UI for diagnostics.
+
+### D4: Fullscreen & User Gesture (R4)
+- **Overlay:** `KioskEntryOverlay`. A high-contrast, full-screen overlay that appears if `document.fullscreenElement` is null and a presentation is active.
+- **Gesture:** The "Start Presentation" button in the overlay will call `document.documentElement.requestFullscreen()`.
+- **Monitoring:** Listen for the `fullscreenchange` event on the window to toggle the visibility of the overlay.
+
+### D5: Reliability & Error Handling (R5, R6)
+- **SW Pulse:** In `App.tsx`, a `setInterval` will call `registration.update()` every 1 hour. We will use the `onNeedRefresh` callback from `vite-plugin-pwa` to trigger an immediate `window.location.reload()` (since `autoUpdate` is enabled).
+- **Error Ring Buffer:** Implement a simple `DiagnosticContext` that maintains an array of strings (max 100). Errors from parsing or rendering are pushed here.
+- **Failover Advance:** In `Player.tsx`, catch rendering errors. If an error occurs, set a timeout equal to the current `interval` to trigger `dispatch({ type: 'NEXT_SLIDE' })`.
+
+### D6: Sliding Window Rendering (R7)
+- **Implementation:** Modify `Player.tsx` to render a slice of the `slides` array.
+- **Window Size:** Render `[currentSlide - 1, currentSlide, currentSlide + 1]`.
+- **Wrapping:** Use modulo math to handle the start/end of the presentation (e.g., the "previous" of slide 0 is slide N-1).
+- **DOM Strategy:** Use absolute positioning and `z-index` to only show the `currentSlide`. The neighbors are rendered but hidden (e.g., `visibility: hidden` or `opacity: 0`) to keep them in memory for faster switching without clogging the DOM with hundreds of slides.
+
+### D7: Build & Compatibility (R8, R9)
+- **Vite Config:** Add `base: '/perpetual-presentation/'`.
+- **PWA Manifest:** Update `start_url` and `scope`.
+- **Polyfills:** Add `vite-plugin-node-polyfills` to the Vite config to provide `Buffer` for `@kandiforge/pptx-renderer`.
 
 ## Test Specifications
-*(NL test cases written during DESIGN)*
+
+- **TS-1: Persistence Debounce** → Given a presentation is playing, When the slide changes 5 times in 200ms, Then the database should only be updated once after the 500ms debounce period. (R1)
+- **TS-2: Auto-Resume** → Given the app was closed on Slide 12, When the app is launched again, Then Slide 12 should be automatically loaded and displayed. (R1)
+- **TS-3: Settings Accessibility** → Given the Settings Panel is open, When checked for touch target sizes, Then all interactive elements must be at least 44x44px. (R2)
+- **TS-4: Wake Lock Recovery** → Given the Screen Wake Lock is active, When the tab becomes hidden and then visible again, Then the Wake Lock should be automatically re-acquired. (R3)
+- **TS-5: Fullscreen Enforcement** → Given the app is not in fullscreen, When a presentation is active, Then the KioskEntryOverlay must be visible and blocking all other interactions. (R4)
+- **TS-6: Sliding Window Limit** → Given a 50-slide presentation, When navigating through slides, Then there should never be more than 3 `SlideView` components present in the DOM. (R7)
+- **TS-7: Error Failover** → Given a slide that throws a rendering error, When the playback interval expires, Then the player must automatically advance to the next slide. (R6)
+- **TS-8: Periodic Update Check** → Given the app is running for over an hour, When the update interval is reached, Then `serviceWorker.registration.update()` must be called. (R5)
+
 
 ## Research Notes
 ### Screen Wake Lock API
