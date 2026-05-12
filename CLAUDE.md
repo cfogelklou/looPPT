@@ -67,6 +67,10 @@ bun run test:run       # Run all tests
 - **HTTPS required**: Wake Lock, Fullscreen API, SW all need secure context
 - No CI/CD configured yet — manual build + deploy
 
+## Tips
+
+- **Gemini CLI for visual analysis**: Use `gemini` CLI to compare screenshots when debugging rendering issues. Example: `gemini "Compare these two screenshots and list all visual differences" --yolo`
+
 ## Documentation
 
 PRD, milestones, and delivery summaries in `vibe-model/`.
