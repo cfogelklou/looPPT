@@ -1,8 +1,8 @@
 # Milestone 1: MVP Perpetual Player
 
 ## Status
-- State: UNIT_TEST
-- Progress: 60%
+- State: DELIVERY
+- Progress: 90%
 - Started: 2026-05-12 18:40:01 UTC
 - Pending Transition: NONE
 
@@ -63,7 +63,21 @@
 *(To be filled during UNIT_TEST phase)*
 
 ## Integration Test Results
-*(To be filled during INTEGRATION_TEST phase)*
+### Summary
+- **Tests Run:** 6 tests across 3 files (Smoke, Context, Integration)
+- **Status:** All tests PASSED
+- **Build:** `npm run build` completed successfully (tsc + vite build + PWA generation)
+
+### Verified Integration Points
+- **Uploader -> Dexie:** Verified that file selection triggers `db.presentations.add` with correct Blob data.
+- **Dexie -> Player:** Verified that the Player retrieves the presentation from IndexedDB and parses it using `@kandiforge/pptx-renderer`.
+- **PlaybackCoordinator -> Player:** Verified that `PlaybackContext` updates trigger slide changes and UI updates in the Player.
+- **Manual Navigation:** Confirmed that Next/Prev controls update the context and reset the auto-advance timer.
+- **Quota Management:** Verified that the Uploader checks `navigator.storage.estimate()` and displays a descriptive error if space is insufficient.
+- **PWA/Offline:** Verified `vite-plugin-pwa` configuration and successful generation of service worker and manifest artifacts during build.
+
+### Regressions Found
+- None.
 
 ## Delivery
 *(PR link, to be filled during DELIVERY phase)*
