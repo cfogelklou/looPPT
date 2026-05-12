@@ -15,7 +15,7 @@ import { usePlayback } from '../store/PlaybackContext';
 
 export function SettingsOverlay() {
   const [open, setOpen] = useState(false);
-  const { state, dispatch } = usePlayback();
+  const { state, dispatch, clearPresentation } = usePlayback();
   const [storageUsage, setStorageUsage] = useState<{ used: string; quota: string; percent: number } | null>(null);
 
   useEffect(() => {
@@ -123,7 +123,22 @@ export function SettingsOverlay() {
           )}
         </Box>
 
-        <Box sx={{ mt: 'auto' }}>
+        <Box sx={{ mt: 'auto', display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+          <Button
+            fullWidth
+            variant="outlined"
+            color="error"
+            onClick={async () => {
+              if (document.fullscreenElement) {
+                await document.exitFullscreen();
+              }
+              await clearPresentation();
+              setOpen(false);
+            }}
+            sx={{ height: 48 }}
+          >
+            Load New Presentation
+          </Button>
           <Button
             fullWidth
             variant="outlined"

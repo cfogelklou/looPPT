@@ -18,7 +18,8 @@ export type PlaybackAction =
   | { type: 'GOTO_SLIDE'; index: number }
   | { type: 'SET_PLAYING'; isPlaying: boolean }
   | { type: 'SET_INTERVAL'; seconds: number }
-  | { type: 'SET_ERROR'; message: string };
+  | { type: 'SET_ERROR'; message: string }
+  | { type: 'CLEAR_PRESENTATION' };
 
 const initialState: PlaybackState = {
   currentSlide: 0,
@@ -56,6 +57,8 @@ function playbackReducer(state: PlaybackState, action: PlaybackAction): Playback
       return { ...state, interval: action.seconds };
     case 'SET_ERROR':
       return { ...state, error: action.message };
+    case 'CLEAR_PRESENTATION':
+      return { ...initialState };
     default:
       return state;
   }
@@ -64,6 +67,7 @@ function playbackReducer(state: PlaybackState, action: PlaybackAction): Playback
 const PlaybackContext = createContext<{
   state: PlaybackState;
   dispatch: React.Dispatch<PlaybackAction>;
+  clearPresentation: () => Promise<void>;
 } | null>(null);
 
 export function PlaybackProvider({ children, initialSettings }: { children: ReactNode, initialSettings: Settings }) {
@@ -110,8 +114,16 @@ export function PlaybackProvider({ children, initialSettings }: { children: Reac
     };
   }, [state.currentSlide, state.interval, state.presentationId]);
 
+  const clearPresentation = async () => {
+    if (state.presentationId) {
+      await db.presentations.delete(state.presentationId);
+    }
+    await db.settings.update('current', { presentationId: undefined, currentSlide: 0 });
+    dispatch({ type: 'CLEAR_PRESENTATION' });
+  };
+
   return (
-    <PlaybackContext.Provider value={{ state, dispatch }}>
+    <PlaybackContext.Provider value={{ state, dispatch, clearPresentation }}>
       {children}
     </PlaybackContext.Provider>
   );
