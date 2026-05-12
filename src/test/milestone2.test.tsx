@@ -15,10 +15,11 @@ vi.mock('../store/db', () => ({
       get: vi.fn().mockResolvedValue({ id: 'current', presentationId: 1, currentSlide: 0, interval: 5 }),
     },
     presentations: {
-      get: vi.fn().mockResolvedValue({ 
-        id: 1, 
-        name: 'Test', 
-        blob: new Blob([''], { type: 'application/vnd.openxmlformats-officedocument.presentationml.presentation' }) 
+      get: vi.fn().mockResolvedValue({
+        id: 1,
+        name: 'Test',
+        sourceType: 'pptx',
+        blob: new Blob([''], { type: 'application/vnd.openxmlformats-officedocument.presentationml.presentation' })
       }),
     }
   },
@@ -53,11 +54,13 @@ vi.mock('lucide-react', () => ({
   Pause: () => <span>Pause</span>,
   RefreshCcw: () => <span>Loading</span>,
   AlertCircle: () => <span>Error</span>,
+  AlertTriangle: () => <span>Warning</span>,
   Layout: () => <span>Layout</span>,
   Settings: () => <span>Settings</span>,
   X: () => <span>Close</span>,
   Info: () => <span>Info</span>,
   Upload: () => <span>Upload</span>,
+  Fullscreen: () => <span>Fullscreen</span>,
 }));
 
 // Mock PWA register

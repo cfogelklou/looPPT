@@ -28,25 +28,25 @@ vi.mock('@kandiforge/pptx-renderer', () => ({
 describe('LooPPT Smoke Test', () => {
   it('renders the uploader when no presentation is selected', async () => {
     render(<App />);
-    
+
     // Wait for initial loading
     const title = await screen.findByText('LooPPT');
     expect(title).toBeInTheDocument();
-    
+
     const uploadText = screen.getByText('Upload Presentation');
     expect(uploadText).toBeInTheDocument();
   });
 
-  it('shows an error when a non-pptx file is selected', async () => {
+  it('shows an error when an unsupported file type is selected', async () => {
     render(<App />);
-    
+
     await screen.findByText('LooPPT');
     const input = screen.getByLabelText(/Upload Presentation/i);
-    
+
     const file = new File(['hello'], 'hello.txt', { type: 'text/plain' });
     fireEvent.change(input, { target: { files: [file] } });
-    
-    const errorMsg = await screen.findByText('Please upload a valid .pptx file.');
+
+    const errorMsg = await screen.findByText(/Please upload a \.pdf or \.pptx file\./i);
     expect(errorMsg).toBeInTheDocument();
   });
 });

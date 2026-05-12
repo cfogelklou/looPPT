@@ -38,7 +38,7 @@ function AppContent() {
             </div>
           </div>
           <h1 className="text-4xl font-bold tracking-tight mb-2">LooPPT</h1>
-          <p className="text-zinc-500">Perpetual PowerPoint Loop Player</p>
+          <p className="text-zinc-500">Perpetual Presentation Loop Player</p>
         </div>
         <Uploader />
       </div>

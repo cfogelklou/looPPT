@@ -1,8 +1,11 @@
 import Dexie, { type Table } from 'dexie';
 
+export type PresentationSourceType = 'pdf' | 'pptx';
+
 export interface Presentation {
   id?: number;
   name: string;
+  sourceType: PresentationSourceType;
   blob: Blob;
   updatedAt: number;
 }
@@ -24,6 +27,14 @@ export class LooPPTDatabase extends Dexie {
     this.version(1).stores({
       presentations: '++id, name, updatedAt',
       settings: 'id'
+    });
+    this.version(2).stores({
+      presentations: '++id, name, updatedAt',
+      settings: 'id'
+    }).upgrade(tx => {
+      return tx.table('presentations').toCollection().modify(pres => {
+        pres.sourceType = 'pptx';
+      });
     });
   }
 }

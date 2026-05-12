@@ -16,6 +16,7 @@ vi.mock('../store/db', async (importOriginal) => {
         get: vi.fn().mockResolvedValue({
           id: 1,
           name: 'test.pptx',
+          sourceType: 'pptx',
           blob: new Blob(['dummy content'], { type: 'application/vnd.openxmlformats-officedocument.presentationml.presentation' }),
           updatedAt: Date.now()
         }),
