@@ -1,8 +1,8 @@
 # Milestone 1: MVP Perpetual Player
 
 ## Status
-- State: DELIVERY
-- Progress: 90%
+- State: COMPLETE
+- Progress: 100%
 - Started: 2026-05-12 18:40:01 UTC
 - Pending Transition: NONE
 
@@ -60,7 +60,8 @@
 - Quota check is based on `navigator.storage.estimate()`, which may be restricted in some browser environments or incognito modes.
 
 ## Unit Test Results
-*(To be filled during UNIT_TEST phase)*
+- **Tests Run:** 6 tests across 3 files (Smoke, Context, Integration)
+- **Status:** All tests PASSED
 
 ## Integration Test Results
 ### Summary
@@ -80,7 +81,20 @@
 - None.
 
 ## Delivery
-*(PR link, to be filled during DELIVERY phase)*
+### Pull Request
+- **Title**: Milestone 01: MVP Perpetual Player
+- **Reference**: `milestone-01-delivery`
+- **Summary**: Delivered a functional MVP for the Perpetual Player, including PPTX rendering, persistent storage via Dexie.js, automatic playback with looping, and offline support via PWA. All requirements met and verified with 100% test pass rate.
+
+### Deliverables
+- Functional Vite/React/TS project structure.
+- IndexedDB storage layer for large binary PPTX files.
+- Robust playback engine with manual and automatic navigation.
+- Offline-ready PWA configuration.
+- Comprehensive test suite covering core state logic and integration points.
 
 ## Learnings
-*(Replaces memory.md — learnings from this milestone)*
+- **Tailwind 4 Integration:** The new `@tailwindcss/vite` plugin significantly simplifies the build pipeline compared to PostCSS-based setups.
+- **IndexedDB Performance:** Storing raw Blobs in Dexie.js is highly efficient and avoids the overhead of Base64 encoding.
+- **PWA for Kiosk Apps:** `vite-plugin-pwa` is essential for 24/7 reliability, ensuring the app shell remains available even during network fluctuations.
+- **PPTX Rendering Complexity:** Working directly with `parsePPTX` and `SlideView` provides the necessary granularity for custom playback logic (e.g., precise timer resets on manual intervention).

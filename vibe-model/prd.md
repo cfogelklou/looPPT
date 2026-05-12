@@ -31,7 +31,7 @@ The application shell and core assets are cached via a Service Worker (`Generate
 
 | ID | Name | Description | Status |
 |---|---|---|---|
-| 1 | MVP Perpetual Player | Core infrastructure, Dexie schema, PPTX upload UI, and basic looping playback logic. Includes test harness setup. | PENDING |
+| 1 | MVP Perpetual Player | Core infrastructure, Dexie schema, PPTX upload UI, and basic looping playback logic. Includes test harness setup. | IN_PROGRESS |
 | 2 | Production Kiosk Features | Integration of Wake Lock/Fullscreen APIs, settings panel, and auto-resume persistence. | PENDING |
 
 ### Milestone 1: MVP Perpetual Player

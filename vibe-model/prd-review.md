@@ -1,8 +1,8 @@
-# PRD Review - Iteration 1
+# PRD Review - Iteration 3
 
-**Overall Status:** ❌ NEEDS REVISION
+**Overall Status:** ✅ APPROVED
 
-**Timestamp:** 2026-05-12T18:54:29.873Z
+**Timestamp:** 2026-05-12T18:58:00.713Z
 
 ## ARCHITECTURE Review ✅
 
@@ -10,24 +10,23 @@
 
 ### Findings
 
-- [MINOR] Rendering pipeline unspecified. PRD says `@kandiforge/pptx-renderer` "handles conversion" but doesn't clarify render target (canvas, DOM, SVG, images). Code shows `SlideView` component rendering to DOM — this is the core data flow. A one-liner clarifying render model strengthens architecture section. Not blocking since code already exists and works.
-- [MINOR] No memory/eviction strategy for long-running kiosk. `Player.tsx:9` stores entire parsed `PPTXData` in state for lifetime of component. For 100+ slide decks with images, this is unbounded memory. Kiosk runs 24/7 — tab crash inevitable without eviction. Architecture section should note lazy vs eager rendering decision. Not blocking since M2 can address.
-- [MINOR] `PlaybackContext.tsx:86-92` persists every slide change to IndexedDB on every tick. Write frequency = 1 write per `interval` seconds while playing. For 5s interval over 24h, that's ~17K writes/day. Should be debounced or persisted only on pause/stop. Architecture section should note persistence strategy. Not blocking.
-- [MINOR] Tailwind + MUI both in stack creates styling ambiguity. Code already uses both (`Player.tsx` uses Tailwind classes, MUI listed in deps). No guidance on which to use where. Minor since codebase is small and consistent so far.
-- [MINOR] Milestone 2 depends on Milestone 1's Playback Coordinator for Wake Lock integration, but no explicit interface contract described. `usePlayback` hook is the de facto coordinator — acceptable since implementation already exists. Dependency ordering is correct (M1 core → M2 kiosk features).
-- [MINOR] PWA service worker strategy not specified. `vite-plugin-pwa` supports multiple strategies (GenerateSW, InjectManifest). For offline-first kiosk, cache strategy matters. Not blocking — defaults likely work for MVP.
+- [MINOR] "Debounced (500ms) or limited to manual changes and interval completions" — "or" is ambiguous. Is it debounced AND interval-triggered, or one or the other? Implementation detail, not blocking, but worth a quick clarify.
+- [MINOR] M2 memory strategy says "will explore" lazy parsing/slide-windowing. "Will explore" isn't a commitment — it's a research item. For 24/7 kiosk, unbounded memory from eager loading is a real risk. Consider promoting this to a scoped deliverable with an acceptance criterion (e.g., "parsed data for N slides only held in memory at once").
+- [MINOR] Error handling says "logging the error to an internal buffer." Unbounded log buffer in 24/7 kiosk = same memory leak risk as eager slide data. Should specify bounded buffer (ring buffer, max N entries) or drop oldest. Minor since error path is edge case.
+- [MINOR] No explicit interface contract between M1 PlaybackContext and M2 kiosk features (Wake Lock, auto-resume). M2 adds Wake Lock integration to PlaybackContext — PRD should note that M1's context must expose lifecycle hooks (`onPlay`/`onPause`/`onSlideChange`) for M2 to integrate cleanly. Dependency ordering is correct; contract is implicit.
+- [MINOR] PWA update strategy not addressed. Service worker caches shell with CacheFirst, but how do kiosk deployments get app updates? Browsers check for SW updates on navigation — a kiosk that never navigates may serve stale code indefinitely. Consider noting a periodic update check (e.g., `registerType: 'prompt'` or polling `sw.update()`). Minor for MVP but critical for production kiosk.
 
-## TESTABILITY Review ❌
+## TESTABILITY Review ✅
 
-**Score:** -1
+**Score:** +2
 
 ### Findings
 
-- [MAJOR] Milestone 1 does not explicitly include testing infrastructure setup. "Core infrastructure, Dexie schema, PPTX upload UI, and basic looping playback logic" — no mention of Vitest config, test helpers, mock factories for Dexie/PPTX renderer, or CI test runner. First milestone should establish test harness so subsequent milestones build on tested ground.
-- [MAJOR] No acceptance criteria defined for either milestone. "Basic looping playback logic" is unverifiable — what constitutes "basic"? Acceptance criteria needed: e.g., "given one PPTX uploaded, player loops from last slide back to first with configurable interval."
-- [MAJOR] No testing strategy progression. PRD lists Vitest + RTL in tech stack but never describes what gets tested when. Missing: unit test scope (Dexie schema, playback coordinator logic), integration test scope (upload → persist → render loop), E2E scope (full kiosk cycle with power interrupt). Without this, milestones lack verifiable gates.
-- [MINOR] Wake Lock and Fullscreen APIs are notoriously hard to test in jsdom. Milestone 2 should note mocking strategy for `navigator.wakeLock` and `Element.requestFullscreen` — otherwise acceptance testing becomes manual-only.
-- [MINOR] Dexie.js with IndexedDB needs special test setup (fake-indexeddb or Dexie's test utilities). No mention of this dependency, risk of flaky tests or skipped tests.
+- [MINOR] M1 acceptance criteria mention "Unit tests cover the playbackReducer and Dexie schema initialization" but no quantitative coverage target. For a kiosk-critical app, a minimum coverage threshold (e.g., 80% on core modules) would strengthen the commitment.
+- [MINOR] Testing Strategy section defers E2E to "future scope." For a kiosk PWA that must survive offline boot and power cycles, basic E2E validation of the offline boot path is high-value and should be considered earlier — at minimum as a manual test gate on M2.
+- [MINOR] M2 acceptance criteria include "App survives a browser refresh and resumes playback on the same slide" but no test criterion for the debounced persistence write itself (e.g., verifying that rapid slide transitions don't produce excessive IndexedDB writes). This is the key reliability mechanism for 24/7 operation and deserves explicit test coverage.
+- [MINOR] Error handling section describes slide-failure fallback ("wait interval, advance, log error") but neither milestone's acceptance criteria include a testable assertion for this path. A negative test case would strengthen M2.
+- [MINOR] No mention of testing the service worker registration/offline-detection logic. Given the GenerateSW strategy, verifying the app shell is served from cache after first load would be a valuable M2 integration check.
 
 ## UX Review ✅
 
@@ -35,10 +34,9 @@
 
 ### Findings
 
-- [MINOR] **No user journey defined.** PRD lists tech stack and milestones but no user flows. What happens when kiosk boots? What's the first-screen experience? Upload → configure → play sequence should be documented. Not blocking since milestones imply a clear incremental build.
-- [MINOR] **Accessibility for kiosk context unclear.** Kiosk implies unattended operation, but no mention of: what happens if screen reader users encounter it, contrast requirements for varied lighting, or touch target sizing for potential touch kiosks. Low severity since kiosk mode typically locks down interaction.
-- [MINOR] **Error handling for PPTX rendering failures absent.** `@kandiforge/pptx-renderer` will fail on corrupted/unsupported files. No fallback UX described (skip slide? show placeholder? alert?). Should specify behavior for: corrupt upload, unsupported slide content, renderer crash mid-loop.
-- [MINOR] **No offline-first edge case coverage.** PRD says "offline-first" but doesn't address: what if IndexedDB quota is exceeded, what if upload is interrupted mid-write, what if service worker cache becomes stale after app update. These are the most common kiosk failure modes.
-- [MINOR] **Wake Lock / Fullscreen failure modes unspecified.** Browsers can deny both APIs. No fallback described — does the screen just dim? Does a "tap to wake" message appear? Critical for kiosk reliability but acceptable at PRD level since Milestone 2 covers it.
-- [MINOR] **Settings panel scope undefined.** Milestone 2 mentions "settings panel" but no detail on what's configurable. Loop speed? Slide order? Transition type? Volume? Users need to know what they can adjust.
+- [MINOR] Corrupt/unsupported PPTX upload has no user-facing error feedback. UX journey point 4 covers mid-loop slide failure, but the upload flow (M1) has no error state. What does the user see when they drag-drop an invalid file? A toast? Inline message? Upload rejected silently? One line in M1 acceptance criteria would close this.
+- [MINOR] Wake Lock / Fullscreen denial has no fallback UX. Browsers deny these APIs frequently (no HTTPS, no user gesture, battery saver). M2 says "automatic Fullscreen request on user interaction" but never specifies what happens on denial. Kiosk screen dimming is the #1 field failure mode. Add: "If denied, show persistent banner: 'Tap to enable fullscreen' with re-request on interaction."
+- [MINOR] No upload progress indicator for large PPTX files. Kiosk decks can be 50MB+. IndexedDB write + parsePPTX are both async and slow on large files. Upload flow says "drag-and-drop PPTX upload with persistence" but no loading/progress state. User sees blank screen during parse. Spinner or progress bar needed.
+- [MINOR] Reboot/recovery journey step missing. UX journey covers initial setup → kiosk mode → unattended, but skips what happens after power cycle. M2 mentions "auto-resume," but the journey should have an explicit step: "On reload, app detects existing presentation in IndexedDB, skips upload, resumes playback at last saved slide." This is the most common kiosk state and it's implied, not stated.
+- [MINOR] Accessibility still unaddressed. Touch targets on upload zone and settings controls should meet 44x44px minimum. Color contrast matters for kiosks in varied lighting. Not critical for kiosk context but worth a one-liner: "Interactive elements meet WCAG 2.1 AA touch target and contrast minimums."
 
