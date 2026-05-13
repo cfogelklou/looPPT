@@ -1,8 +1,8 @@
 # Milestone 2: Slide Transitions
 
 ## Status
-- State: UNIT_TEST
-- Progress: 60%
+- State: INTEGRATION_TEST
+- Progress: 75%
 - Started: 2026-05-13 21:05:30 UTC
 - Pending Transition: NONE
 
@@ -289,12 +289,40 @@ PRD says "new AnimationContext manages overlay/transition settings." Milestone 1
 - Settings UI is placeholder-only per design (interactive controls deferred to milestone 3).
 
 ## Unit Test Results
-- **25 tests** in `milestone2-transitions.test.tsx` — all passing
-- **Total suite**: 52 tests across 6 files — all passing
-- Build: clean (tsc + vite build zero errors)
 
-## Unit Test Results
-*(To be filled during UNIT_TEST phase)*
+**Build**: clean (tsc + vite build, zero errors)
+**Suite**: 52 tests across 6 files — all passing (25 in milestone2-transitions.test.tsx)
+
+### Traceability Matrix
+
+| Spec | Test Name | Result |
+|------|-----------|--------|
+| TS-1 | TS-1: assigns slide-current to new slide and slide-leaving to old, then slide-hidden after duration | PASS |
+| TS-2 | TS-2: no slide-leaving on initial render | PASS |
+| TS-3 | TS-3a: container gets transition-slide class | PASS |
+| TS-3 | TS-3b: container gets transition-dissolve class | PASS |
+| TS-4 | TS-4: transition-none uses 300ms timeout regardless of transitionDuration | PASS |
+| TS-5 | TS-5: timeout cleared on unmount, no state update after | PASS |
+| TS-6 | TS-6: rapid changes update leavingIndex and clear previous timeout | PASS |
+| TS-7 | TS-7: SET_TRANSITION_TYPE changes transitionType without affecting other fields | PASS |
+| TS-8 | TS-8: SET_TRANSITION_DURATION changes duration | PASS |
+| TS-9 | TS-9: sanitizeAnimationSettings defaults invalid transitionType to none with warning | PASS |
+| TS-10 | TS-10a/b/c/d: sanitizeAnimationSettings defaults invalid duration to 500 (0, negative, NaN, undefined) | PASS (4 tests) |
+| TS-11 | TS-11: debounce persists transitionType and transitionDuration to DB | PASS |
+| TS-12 | TS-12: upgradeV4Settings adds transitionType and transitionDuration to records without them | PASS |
+| TS-13 | TS-13: upgradeV4Settings does not overwrite existing transition fields | PASS |
+| TS-14 | TS-14: INITIAL_SETTINGS contains transitionType and transitionDuration | PASS |
+| TS-15 | TS-15: transition CSS only animates transform and opacity | PASS |
+| TS-16 | TS-16: state classes have correct z-index values (current=3, leaving=2, hidden=0) | PASS |
+| TS-19 | TS-19: TransitionErrorBoundary renders fallback on error, logs to diagnostics | PASS |
+| TS-20 | TS-20: SettingsOverlay shows Slide Transitions section with read-only values, no controls | PASS |
+| TS-21 | TS-21: cycling 50+ slides leaves no accumulating timeouts or DOM nodes | PASS |
+| TS-22 | TS-22: context loads transition settings from initialSettings | PASS |
+| TS-22 | TS-22b: dispatch changes persist to DB | PASS |
+
+**Coverage**: TS-1 through TS-16, TS-19 through TS-22 all covered. TS-17/TS-18 (player integration tests) deferred to INTEGRATION_TEST phase — require full player rendering with PDF/PPTX mocks.
+
+**Edge cases verified**: rapid navigation (6), invalid transition type sanitization (9), all invalid duration variants (10a-d), idempotent migration guard (13), CSS GPU-composited property constraint (15), z-index layer compliance (16), 50-slide memory stability (21).
 
 ## Integration Test Results
 *(To be filled during INTEGRATION_TEST phase)*
