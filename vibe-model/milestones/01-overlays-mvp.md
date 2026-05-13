@@ -5,6 +5,7 @@
 - Progress: 30%
 - Started: 2026-05-13 18:52:51 UTC
 - Pending Transition: IMPLEMENTATION
+- Requirements Validated: 2026-05-13
 
 ## Requirements
 
@@ -251,7 +252,7 @@ PlayerShell passes `logError` from `useDiagnostics()`.
 - If `overlayEnabled === false` or `overlayPreset === 'none'`, returns `null`
 - Otherwise: renders the SVG component matching `overlayPreset` with:
   - CSS class for the keyframe animation (e.g., `animate-overlay-bounce`)
-  - Inline `style={{ width: state.overlaySize, height: state.overlaySize, opacity: state.overlayOpacity }}`
+  - Inline `style={{ '--overlay-opacity': state.overlayOpacity, width: state.overlaySize, height: state.overlaySize, opacity: state.overlayOpacity } as React.CSSProperties}` — `--overlay-opacity` feeds pulse keyframe's `var()`; inline `opacity` covers bounce/fly-across
   - `will-change: transform, opacity`
   - `position: absolute`, `pointer-events: none`
 - Container: `<div className="absolute inset-0 pointer-events-none z-[5]">` with SVG centered or positioned per preset
@@ -490,27 +491,13 @@ VERDICT: FAIL
 - 2026-05-13: Review failed during REQUIREMENTS: architecture: ```
 VERDICT: FAIL
 ```
+- 2026-05-13: Review failed during REQUIREMENTS: architecture: ```
+VERDICT: FAIL
+```
 
 ## Findings
 
-- **[BLOCKER]** Design section empty (line 69). Milestone in DESIGN state. Six prior reviews flagged this. No component tree, data flow, type definitions, file layout, or integration points exist. Architecture review has no design artifact to validate. Cannot proceed to IMPLEMENTATION.
-
-- **[MAJOR]** R1.4 context structure deferred to design, but design doesn't exist. Three options listed (merged reducer, separate contexts, other) with no decision. This is the
-
-## Findings
-
-- **[BLOCKER]** Design section empty (milestone line 69). State is DESIGN but no component tree, data flow, type definitions, file layout, or integration points exist. Five prior reviews flagged this. Architecture review has no design artifact to validate.
-
-- **[MAJOR]** R1.4 context structure undecided. Requirements say "Design phase decides context structure (merged reducer, separate contexts with shared hook, or other)" — but design is empty. This is the mo
-
-## Findings
-
-- **[BLOCKER]** Design section empty (line 69). Milestone state is DESIGN but no component tree, data flow diagram, type definitions, file layout, or integration points exist. Four prior reviews flagged this. Architecture review has no design artifact to validate against. Cannot proceed to IMPLEMENTATION without it.
-
-- **[MAJOR]** R1.4 merged reducer creates domain coupling. Animation config (rare user edits) lives in same `useReducer` as playback state (timer
-
-## Findings
-
-- **[RESOLVED]** R1.2 originally said AnimationContext "reads initial values from IndexedDB on mount" but didn't specify integration with App.tsx init flow. `PlaybackProvider` receives `initialSettings` as prop — App.tsx blocks rendering until `ensureSettings()` completes (`src/App.tsx:54-56`). Resolution: extend `Settings` type + `ensureSettings()` to include overlay fields, pass same `initialSettings` prop to AnimationProvider. No separate DB read needed. R1.2 updated to specify this pattern explicitly.
-- **[MINOR]** R5.4 says "AnimationOverlay is rendered inside PlayerShell, wrapping the slide content area" but PlayerShell uses `children` prop for slides. AnimationOverlay should be a sibling of `children` inside PlayerShell's `relative` container, rendered between `{children}` and the manual controls div. No wrapping needed — just absolute positioning with higher z-index than slides but lower than controls (z-10) and settings overlay.
-- **[NOTE]** R2.1 adds 4 new fields to Settings: `overlayEnabled`, `overlayPreset`, `overlaySize`, `overlayOpacity`. These must be added to `INITIAL_SETTINGS` with defaults (disabled, 'none', 100, 1.0). Dexie v3 migration only needs to add defaults to existing 'current' record via `.upgrade()`.
+- **[RESOLVED]** R1.2 init flow — AnimationContext uses same prop-based pattern as PlaybackContext.
+- **[RESOLVED]** R5.4 overlay is sibling of children in PlayerShell, not wrapping.
+- **[RESOLVED]** R2.1 fields added to INITIAL_SETTINGS with defaults.
+- **[RESOLVED]** Pulse opacity bug — AnimationOverlay now sets `--overlay-opacity` CSS variable for pulse keyframe.
