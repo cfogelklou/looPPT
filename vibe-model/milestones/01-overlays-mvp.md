@@ -1,8 +1,8 @@
 # Milestone 1: Overlays MVP
 
 ## Status
-- State: DELIVERY
-- Progress: 90%
+- State: COMPLETE
+- Progress: 100%
 - Started: 2026-05-13 18:52:51 UTC
 - Pending Transition: NONE
 - Requirements Validated: 2026-05-13
@@ -530,7 +530,34 @@ Wrap `AnimationProvider` inside `PlaybackProvider`, both receive the same `initi
 - No regressions found. No integration failures. All cross-component data flows match design spec.
 
 ## Delivery
-*(PR link, to be filled during DELIVERY phase)*
+
+- **PR**: (to be filled after push)
+- **Build**: Clean (zero errors, all artifacts: index.html, sw.js, manifest.webmanifest, assets/)
+- **Tests**: 27/27 pass across 5 files (14 milestone1 + 13 existing)
+
+### Files Created
+- `src/store/AnimationContext.tsx` — context, reducer, provider, useAnimation hook, sanitizeAnimationSettings
+- `src/components/AnimationOverlay.tsx` — overlay rendering layer with preset→SVG mapping
+- `src/components/AnimationErrorBoundary.tsx` — class-based error boundary with key-based recovery
+- `src/components/overlays/ArrowOverlay.tsx` — arrow SVG component
+- `src/components/overlays/CircleHighlight.tsx` — circle highlight SVG component
+- `src/components/overlays/StarBurst.tsx` — star burst SVG component
+- `src/components/overlays/index.ts` — barrel export + PRESET_COMPONENTS map
+- `src/styles/animations.css` — CSS keyframe presets (bounce, fly-across, pulse)
+- `src/test/milestone1.test.tsx` — 14 tests covering T1-T13
+
+### Files Modified
+- `src/store/db.ts` — OverlayPreset type, Settings animation fields, v3 migration, INITIAL_SETTINGS
+- `src/App.tsx` — AnimationProvider inside PlaybackProvider
+- `src/components/PlayerShell.tsx` — AnimationErrorBoundary + AnimationOverlay siblings
+- `src/components/SettingsOverlay.tsx` — Animation section with toggle/preset/size/opacity controls
+- `src/index.css` — animations.css import
+- `src/store/PlaybackContext.test.tsx` — overlay fields in mock settings
+- `src/test/milestone2.test.tsx` — AnimationProvider wrapper for existing tests
+
+### Caveats
+- fly-across animation uses `calc(100% - 100px)` — very large overlay sizes may clip at container edges
+- Dual-writer to db.settings: each context owns exclusive field subsets (documented invariant)
 
 ## Learnings
 *(Replaces memory.md — learnings from this milestone)*
@@ -593,3 +620,9 @@ VERDICT: FAIL
 - **[RESOLVED]** `fly-across` viewport units — changed from `100vw`/`100vh` to `100%` for container-relative animation (consistent with R5.1).
 - **[RESOLVED]** ErrorBoundary recovery — `key={overlayPreset}` on ErrorBoundary forces remount when user changes preset, prevents permanent null state.
 - **[RESOLVED]** Dual-writer invariant — documented exclusive field subsets per context.
+- 2026-05-13: Separate AnimationContext (own reducer, own debounce) was correct call. PlaybackState changes every N seconds on timer; animation config changes rarely. Merging would cause unnecessary persistence on every tick.
+- 2026-05-13: ErrorBoundary with `key={overlayPreset}` pattern enables recovery from transient render errors without page reload. Essential for 24/7 kiosk reliability.
+- 2026-05-13: Extracting `upgradeV3Settings` from DB constructor into exported function enabled direct unit testing of migration logic without Dexie instance.
+- 2026-05-13: CSS `?raw` import via Vite for testing CSS keyframe properties — avoids Node `fs`/`path` dependency in test files.
+- 2026-05-13: `sanitizeAnimationSettings()` at provider init validates DB-loaded presets against known values, providing graceful degradation for corrupted data.
+- 2026-05-13: GPU-composited animations (`transform`/`opacity` only) with `will-change` are safe for 24/7 kiosk operation on single overlay element. Would be problematic with many simultaneous animated elements.
