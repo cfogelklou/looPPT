@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useCallback, useEffect, useState, useRef } from 'react';
 import { ensureSettings, factoryReset, type Settings } from './store/db';
 import { PlaybackProvider, usePlayback } from './store/PlaybackContext';
 import { DiagnosticProvider } from './store/DiagnosticContext';
@@ -10,14 +10,17 @@ import { useRegisterSW } from 'virtual:pwa-register/react';
 
 function AppContent() {
   const { state } = usePlayback();
-  const stableSince = useRef(Date.now());
+  const stableSince = useRef(0);
+  useEffect(() => { stableSince.current = Date.now(); }, []);
+
+  const onNeedRefresh = useCallback((updateSW: (reload?: boolean) => Promise<void>) => {
+    if (stableSince.current && Date.now() - stableSince.current > 30_000) {
+      updateSW(true);
+    }
+  }, []);
+
   const { updateServiceWorker } = useRegisterSW({
-    onNeedRefresh() {
-      const stableMs = Date.now() - stableSince.current;
-      if (stableMs > 30_000) {
-        updateServiceWorker(true);
-      }
-    },
+    onNeedRefresh() { onNeedRefresh(updateServiceWorker); },
   });
 
   useEffect(() => {
