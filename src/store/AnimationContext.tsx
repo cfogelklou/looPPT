@@ -1,20 +1,25 @@
 import React, { createContext, useContext, useReducer, useEffect, ReactNode, useRef } from 'react';
-import { db, type Settings, type OverlayPreset } from './db';
+import { db, type Settings, type OverlayPreset, type TransitionType } from './db';
 
 export interface AnimationState {
   overlayEnabled: boolean;
   overlayPreset: OverlayPreset;
   overlaySize: number;
   overlayOpacity: number;
+  transitionType: TransitionType;
+  transitionDuration: number;
 }
 
 export type AnimationAction =
   | { type: 'SET_OVERLAY_ENABLED'; enabled: boolean }
   | { type: 'SET_OVERLAY_PRESET'; preset: OverlayPreset }
   | { type: 'SET_OVERLAY_SIZE'; size: number }
-  | { type: 'SET_OVERLAY_OPACITY'; opacity: number };
+  | { type: 'SET_OVERLAY_OPACITY'; opacity: number }
+  | { type: 'SET_TRANSITION_TYPE'; transitionType: TransitionType }
+  | { type: 'SET_TRANSITION_DURATION'; transitionDuration: number };
 
 const VALID_PRESETS: OverlayPreset[] = ['bounce', 'fly-across', 'pulse', 'none'];
+const VALID_TRANSITION_TYPES: TransitionType[] = ['none', 'crossfade', 'slide', 'wipe', 'dissolve'];
 
 export function sanitizeAnimationSettings(settings: Settings): AnimationState {
   const preset = VALID_PRESETS.includes(settings.overlayPreset)
@@ -23,11 +28,26 @@ export function sanitizeAnimationSettings(settings: Settings): AnimationState {
   if (preset === 'none' && settings.overlayPreset !== 'none' && settings.overlayPreset !== undefined) {
     console.warn(`Invalid overlayPreset "${settings.overlayPreset}", defaulting to "none"`);
   }
+
+  const transitionType = VALID_TRANSITION_TYPES.includes(settings.transitionType)
+    ? settings.transitionType
+    : 'none';
+  if (transitionType === 'none' && settings.transitionType !== 'none' && settings.transitionType !== undefined) {
+    console.warn(`Invalid transitionType "${settings.transitionType}", defaulting to "none"`);
+  }
+
+  const rawDuration = settings.transitionDuration;
+  const transitionDuration = (typeof rawDuration === 'number' && rawDuration > 0 && Number.isFinite(rawDuration))
+    ? rawDuration
+    : 500;
+
   return {
     overlayEnabled: settings.overlayEnabled ?? false,
     overlayPreset: preset,
     overlaySize: settings.overlaySize ?? 100,
     overlayOpacity: settings.overlayOpacity ?? 1.0,
+    transitionType,
+    transitionDuration,
   };
 }
 
@@ -41,6 +61,10 @@ function animationReducer(state: AnimationState, action: AnimationAction): Anima
       return { ...state, overlaySize: action.size };
     case 'SET_OVERLAY_OPACITY':
       return { ...state, overlayOpacity: action.opacity };
+    case 'SET_TRANSITION_TYPE':
+      return { ...state, transitionType: action.transitionType };
+    case 'SET_TRANSITION_DURATION':
+      return { ...state, transitionDuration: action.transitionDuration };
     default:
       return state;
   }
@@ -67,6 +91,8 @@ export function AnimationProvider({ children, initialSettings }: { children: Rea
         overlayPreset: state.overlayPreset,
         overlaySize: state.overlaySize,
         overlayOpacity: state.overlayOpacity,
+        transitionType: state.transitionType,
+        transitionDuration: state.transitionDuration,
       }).catch(console.error);
     }, 500);
 
@@ -75,7 +101,7 @@ export function AnimationProvider({ children, initialSettings }: { children: Rea
         window.clearTimeout(saveTimeoutRef.current);
       }
     };
-  }, [state.overlayEnabled, state.overlayPreset, state.overlaySize, state.overlayOpacity]);
+  }, [state.overlayEnabled, state.overlayPreset, state.overlaySize, state.overlayOpacity, state.transitionType, state.transitionDuration]);
 
   return (
     <AnimationContext.Provider value={{ state, dispatch }}>

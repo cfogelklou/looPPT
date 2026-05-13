@@ -4,6 +4,8 @@ export type PresentationSourceType = 'pdf' | 'pptx';
 
 export type OverlayPreset = 'bounce' | 'fly-across' | 'pulse' | 'none';
 
+export type TransitionType = 'none' | 'crossfade' | 'slide' | 'wipe' | 'dissolve';
+
 export interface Presentation {
   id?: number;
   name: string;
@@ -22,6 +24,8 @@ export interface Settings {
   overlayPreset: OverlayPreset;
   overlaySize: number;
   overlayOpacity: number;
+  transitionType: TransitionType;
+  transitionDuration: number;
 }
 
 export class LooPPTDatabase extends Dexie {
@@ -46,6 +50,10 @@ export class LooPPTDatabase extends Dexie {
       presentations: '++id, name, updatedAt',
       settings: 'id'
     }).upgrade(upgradeV3Settings);
+    this.version(4).stores({
+      presentations: '++id, name, updatedAt',
+      settings: 'id'
+    }).upgrade(upgradeV4Settings);
   }
 }
 
@@ -56,6 +64,15 @@ export async function upgradeV3Settings(tx: Transaction) {
       s.overlayPreset = 'none';
       s.overlaySize = 100;
       s.overlayOpacity = 1.0;
+    }
+  });
+}
+
+export async function upgradeV4Settings(tx: Transaction) {
+  return tx.table('settings').toCollection().modify((s: Record<string, unknown>) => {
+    if (s.transitionType === undefined) {
+      s.transitionType = 'none';
+      s.transitionDuration = 500;
     }
   });
 }
@@ -71,6 +88,8 @@ export const INITIAL_SETTINGS: Settings = {
   overlayPreset: 'none',
   overlaySize: 100,
   overlayOpacity: 1.0,
+  transitionType: 'none',
+  transitionDuration: 500,
 };
 
 export async function ensureSettings() {

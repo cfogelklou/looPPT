@@ -112,6 +112,20 @@ export function SettingsOverlay() {
 
         <Divider sx={{ my: 3, borderColor: 'rgba(255,255,255,0.1)' }} />
 
+        <Box sx={{ mb: 4, opacity: 0.5 }}>
+          <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
+            Slide Transitions
+          </Typography>
+          <Typography variant="caption" color="rgba(255,255,255,0.4)" sx={{ display: 'block', mb: 1 }}>
+            (coming in next update)
+          </Typography>
+          <Typography variant="body2" color="rgba(255,255,255,0.5)">
+            Type: {animState.transitionType} &middot; Duration: {animState.transitionDuration}ms
+          </Typography>
+        </Box>
+
+        <Divider sx={{ my: 3, borderColor: 'rgba(255,255,255,0.1)' }} />
+
         <Box sx={{ mb: 4 }}>
           <FormControlLabel
             control={

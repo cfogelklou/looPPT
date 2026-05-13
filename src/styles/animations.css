@@ -28,3 +28,125 @@
   animation: overlay-pulse 2s ease-in-out infinite;
   will-change: transform, opacity;
 }
+
+/* Slide transition base */
+.slide-transition-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.slide-base {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.slide-base.slide-hidden {
+  opacity: 0;
+  z-index: 0;
+}
+
+.slide-base.slide-current {
+  z-index: 3;
+  will-change: transform, opacity;
+}
+
+.slide-base.slide-leaving {
+  z-index: 2;
+  will-change: transform, opacity;
+}
+
+/* transition-none: fixed 300ms opacity fade (backward compat) */
+.transition-none .slide-base {
+  transition-property: opacity;
+  transition-timing-function: ease;
+}
+.transition-none .slide-base.slide-hidden {
+  opacity: 0;
+  transition-duration: 300ms;
+}
+.transition-none .slide-base.slide-current {
+  opacity: 1;
+  transition-duration: 300ms;
+}
+.transition-none .slide-base.slide-leaving {
+  opacity: 0;
+  transition-duration: 300ms;
+}
+
+/* transition-crossfade: opacity blend with configurable duration */
+.transition-crossfade .slide-base {
+  transition-property: opacity;
+  transition-timing-function: ease;
+  transition-duration: var(--transition-duration, 500ms);
+}
+.transition-crossfade .slide-base.slide-hidden {
+  opacity: 0;
+}
+.transition-crossfade .slide-base.slide-current {
+  opacity: 1;
+}
+.transition-crossfade .slide-base.slide-leaving {
+  opacity: 0;
+}
+
+/* transition-slide: horizontal push */
+.transition-slide .slide-base {
+  transition-property: transform;
+  transition-timing-function: ease;
+  transition-duration: var(--transition-duration, 500ms);
+}
+.transition-slide .slide-base.slide-hidden {
+  opacity: 1;
+  transform: translateX(100%);
+}
+.transition-slide .slide-base.slide-current {
+  opacity: 1;
+  transform: translateX(0);
+}
+.transition-slide .slide-base.slide-leaving {
+  opacity: 1;
+  transform: translateX(-100%);
+}
+
+/* transition-wipe: incoming slides over outgoing */
+.transition-wipe .slide-base {
+  transition-property: transform;
+  transition-timing-function: ease;
+  transition-duration: var(--transition-duration, 500ms);
+}
+.transition-wipe .slide-base.slide-hidden {
+  opacity: 1;
+  transform: translateX(100%);
+}
+.transition-wipe .slide-base.slide-current {
+  opacity: 1;
+  transform: translateX(0);
+}
+.transition-wipe .slide-base.slide-leaving {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+/* transition-dissolve: opacity + scale */
+.transition-dissolve .slide-base {
+  transition-property: transform, opacity;
+  transition-timing-function: ease;
+  transition-duration: var(--transition-duration, 500ms);
+}
+.transition-dissolve .slide-base.slide-hidden {
+  opacity: 0;
+  transform: scale(0.95);
+}
+.transition-dissolve .slide-base.slide-current {
+  opacity: 1;
+  transform: scale(1);
+}
+.transition-dissolve .slide-base.slide-leaving {
+  opacity: 0;
+  transform: scale(0.95);
+}

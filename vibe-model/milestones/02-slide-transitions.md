@@ -1,8 +1,8 @@
 # Milestone 2: Slide Transitions
 
 ## Status
-- State: IMPLEMENTATION
-- Progress: 40%
+- State: UNIT_TEST
+- Progress: 60%
 - Started: 2026-05-13 21:05:30 UTC
 - Pending Transition: NONE
 
@@ -264,7 +264,34 @@ PRD says "new AnimationContext manages overlay/transition settings." Milestone 1
 - **dissolve**: `opacity` + `scale(0.95→1)` combined
 
 ## Implementation Notes
-*(To be filled during IMPLEMENTATION phase)*
+
+### Files Created
+- **`src/components/TransitionLayer.tsx`**: Core transition component. Reads transitionType/transitionDuration from AnimationContext. Tracks leavingIndex via useState + setTimeout cleanup. Wraps each child in `.slide-base` + state class (`.slide-current`/`.slide-leaving`/`.slide-hidden`). Handles rapid navigation by clearing previous timeout.
+- **`src/components/TransitionErrorBoundary.tsx`**: Error boundary matching milestone 1 pattern. On error, renders fallback message (cannot re-render throwing children). Logs via `logError` prop.
+- **`src/test/milestone2-transitions.test.tsx`**: 25 tests covering TS-1 through TS-22 (all transition specs). Uses TransitionLayerTester harness to simulate slide index changes.
+
+### Files Modified
+- **`src/store/db.ts`**: Added `TransitionType` union type, `transitionType`/`transitionDuration` fields to `Settings`, `upgradeV4Settings` migration function, v4 schema, updated `INITIAL_SETTINGS`.
+- **`src/store/AnimationContext.tsx`**: Added transition fields to `AnimationState`, `SET_TRANSITION_TYPE`/`SET_TRANSITION_DURATION` actions, sanitize logic with `VALID_TRANSITION_TYPES` array + duration validation, debounce deps updated.
+- **`src/styles/animations.css`**: Added slide transition CSS: `.slide-transition-container`, `.slide-base`, state classes (`.slide-hidden`/`.slide-current`/`.slide-leaving`), 5 transition type containers (`.transition-none`/`.transition-crossfade`/`.transition-slide`/`.transition-wipe`/`.transition-dissolve`). All GPU-composited (transform + opacity only). Z-index: current=3, leaving=2, hidden=0.
+- **`src/components/PdfPlayer.tsx`**: Replaced inline opacity/visibility/z-index styles with `TransitionErrorBoundary` > `TransitionLayer` wrapper.
+- **`src/components/PptxPlayer.tsx`**: Same as PdfPlayer — replaced inline styles with transition wrappers.
+- **`src/components/SettingsOverlay.tsx`**: Added disabled "Slide Transitions" section between Animation Overlay and Storage Usage. Shows read-only current values, no controls.
+- **`src/store/PlaybackContext.test.tsx`**: Added transition fields to initialSettings mock.
+- **`src/test/milestone1.test.tsx`**: Added transition fields to mock INITIAL_SETTINGS and defaultSettings.
+- **`src/test/milestone2.test.tsx`**: Added transition fields to mock INITIAL_SETTINGS.
+
+### Deviations from Design
+- **TransitionErrorBoundary fallback**: Design said "renders children with basic visibility styles." Changed to render a text fallback because React error boundaries cannot re-render throwing children from their own render method (causes re-throw). This is a known React limitation. In practice, the player's existing ErrorBoundary + the TransitionErrorBoundary together provide full coverage — if transition logic fails, the user sees a message; if slide rendering fails, the player-level boundary handles it.
+
+### Known Limitations
+- Slide direction (forward/backward) not differentiated — `slide` transition always pushes left. A future enhancement could use translateX(+100%) for backward navigation.
+- Settings UI is placeholder-only per design (interactive controls deferred to milestone 3).
+
+## Unit Test Results
+- **25 tests** in `milestone2-transitions.test.tsx` — all passing
+- **Total suite**: 52 tests across 6 files — all passing
+- Build: clean (tsc + vite build zero errors)
 
 ## Unit Test Results
 *(To be filled during UNIT_TEST phase)*

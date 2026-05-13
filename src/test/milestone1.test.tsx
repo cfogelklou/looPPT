@@ -36,6 +36,8 @@ vi.mock('../store/db', async () => {
       overlayPreset: 'none',
       overlaySize: 100,
       overlayOpacity: 1.0,
+      transitionType: 'none',
+      transitionDuration: 500,
     },
     ensureSettings: vi.fn().mockResolvedValue({
       id: 'current',
@@ -46,6 +48,8 @@ vi.mock('../store/db', async () => {
       overlayPreset: 'none',
       overlaySize: 100,
       overlayOpacity: 1.0,
+      transitionType: 'none',
+      transitionDuration: 500,
     }),
   };
 });
@@ -81,6 +85,8 @@ const defaultSettings: Settings = {
   overlayPreset: 'none',
   overlaySize: 100,
   overlayOpacity: 1.0,
+  transitionType: 'none',
+  transitionDuration: 500,
 };
 
 function createWrapper(settings: Settings = defaultSettings) {
