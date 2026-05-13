@@ -2,9 +2,9 @@
 
 ## Status
 - State: DESIGN
-- Progress: 20%
+- Progress: 30%
 - Started: 2026-05-13 18:52:51 UTC
-- Pending Transition: NONE
+- Pending Transition: IMPLEMENTATION
 
 ## Requirements
 
@@ -66,10 +66,354 @@
 - R9.3: Touch targets in settings UI meet 44x44px minimum (existing convention).
 
 ## Design
-*(To be filled during DESIGN phase)*
+
+### Architectural Decision: Separate AnimationContext
+
+**Decision**: Separate `AnimationContext` with own `useReducer`, own debounced persistence writing only animation fields to `db.settings`.
+
+**Rationale**: Project convention is one context per domain (`PlaybackContext`, `DiagnosticContext`). PlaybackState changes every N seconds (timer-driven `NEXT_SLIDE`); animation config changes rarely (user action). Merging into one reducer couples unrelated update frequencies and would cause the debounced persistence effect to fire on every timer tick even when only animation fields changed.
+
+**Single-writer safety**: Dexie `update()` performs atomic partial merges on the `settings` record. PlaybackContext persistence writes `{currentSlide, interval, presentationId}`. AnimationContext persistence writes `{overlayEnabled, overlayPreset, overlaySize, overlayOpacity}`. No overlapping fields, no race conditions. Each context owns its own 500ms debounce timer.
+
+### Type Definitions
+
+**File**: `src/store/db.ts` — `OverlayPreset` union type lives here alongside `Settings` since it's stored in the DB.
+
+```typescript
+// src/store/db.ts additions
+
+export type OverlayPreset = 'bounce' | 'fly-across' | 'pulse' | 'none';
+
+export interface Settings {
+  id: string;
+  presentationId?: number;
+  currentSlide: number;
+  interval: number;
+  fitMode: 'contain' | 'cover';
+  overlayEnabled: boolean;
+  overlayPreset: OverlayPreset;
+  overlaySize: number;
+  overlayOpacity: number;
+}
+```
+
+**File**: `src/store/AnimationContext.tsx` — animation state and actions.
+
+```typescript
+export interface AnimationState {
+  overlayEnabled: boolean;
+  overlayPreset: OverlayPreset;
+  overlaySize: number;
+  overlayOpacity: number;
+}
+
+export type AnimationAction =
+  | { type: 'SET_OVERLAY_ENABLED'; enabled: boolean }
+  | { type: 'SET_OVERLAY_PRESET'; preset: OverlayPreset }
+  | { type: 'SET_OVERLAY_SIZE'; size: number }
+  | { type: 'SET_OVERLAY_OPACITY'; opacity: number };
+```
+
+### Database Migration (v2 → v3)
+
+**File**: `src/store/db.ts`
+
+```typescript
+this.version(3).stores({
+  presentations: '++id, name, updatedAt',
+  settings: 'id'
+}).upgrade(tx => {
+  return tx.table('settings').toCollection().modify(s => {
+    if (s.overlayEnabled === undefined) {
+      s.overlayEnabled = false;
+      s.overlayPreset = 'none';
+      s.overlaySize = 100;
+      s.overlayOpacity = 1.0;
+    }
+  });
+});
+```
+
+`INITIAL_SETTINGS` updated with defaults: `{ overlayEnabled: false, overlayPreset: 'none', overlaySize: 100, overlayOpacity: 1.0 }`.
+
+`ensureSettings()` unchanged — returns the full Settings record including new fields.
+
+### Component Tree
+
+```
+App
+├── DiagnosticProvider
+│   └── PlaybackProvider (initialSettings)
+│       └── AnimationProvider (initialSettings)  ← NEW
+│           └── AppContent
+│               ├── Uploader (no presentation)
+│               └── Player
+│                   └── PlayerShell
+│                       ├── SettingsOverlay (z-50 gear icon, z-auto drawer)
+│                       ├── AnimationErrorBoundary  ← NEW
+│                       │   └── AnimationOverlay (z-5)  ← NEW
+│                       ├── Loading Spinner (z-20)
+│                       ├── Warning Banner (z-30)
+│                       ├── {children} → slides (z-0)
+│                       └── Manual Controls (z-10)
+```
+
+### Data Flow
+
+1. **Init**: `App.tsx` calls `ensureSettings()` → blocks render until DB read completes → passes `initialSettings` to both `PlaybackProvider` and `AnimationProvider` as props.
+2. **User action**: Settings UI dispatches `AnimationAction` → reducer updates `AnimationState` → 500ms debounce → `db.settings.update('current', { overlayEnabled, overlayPreset, overlaySize, overlayOpacity })`.
+3. **Render**: `AnimationOverlay` reads state from `AnimationContext` → if `overlayEnabled === false`, returns `null` → else renders SVG with CSS keyframe preset, size, opacity.
+4. **Error path**: AnimationOverlay render error → `AnimationErrorBoundary` catches → logs `error.message + componentStack` to `DiagnosticContext.logError()` → renders `null` fallback → playback continues unaffected.
+
+### File Layout
+
+```
+src/
+  store/
+    AnimationContext.tsx    ← NEW: context, reducer, provider, useAnimation hook
+    db.ts                   ← MODIFIED: OverlayPreset type, Settings fields, v3 migration
+  components/
+    AnimationOverlay.tsx    ← NEW: overlay rendering layer
+    AnimationErrorBoundary.tsx ← NEW: error boundary for overlay
+    overlays/               ← NEW: built-in SVG overlay components
+      ArrowOverlay.tsx
+      CircleHighlight.tsx
+      StarBurst.tsx
+      index.ts              ← barrel export + preset→component map
+    PlayerShell.tsx          ← MODIFIED: add AnimationErrorBoundary + AnimationOverlay
+    SettingsOverlay.tsx      ← MODIFIED: add Animation section
+  styles/
+    animations.css           ← NEW: @keyframes definitions (bounce, fly-across, pulse)
+  App.tsx                    ← MODIFIED: wrap AnimationProvider inside PlaybackProvider
+  index.css                  ← MODIFIED: @import "./styles/animations.css"
+```
+
+### Z-Index Layer Map
+
+| Layer | z-index | Owner |
+|-------|---------|-------|
+| Slide content | auto/0 | PptxPlayer/PdfPlayer |
+| Transitions (reserved) | 2–4 | Milestone 2 |
+| Animation overlay | 5 | AnimationOverlay |
+| Manual controls | 10 | PlayerShell |
+| Loading spinner | 20 | PlayerShell |
+| Warning banner | 30 | PlayerShell |
+| Settings gear | 50 | SettingsOverlay |
+
+### ErrorBoundary Design
+
+**File**: `src/components/AnimationErrorBoundary.tsx`
+
+```typescript
+interface Props {
+  children: ReactNode;
+}
+
+interface State {
+  hasError: boolean;
+}
+
+class AnimationErrorBoundary extends React.Component<Props, State> {
+  state: State = { hasError: false };
+
+  static getDerivedStateFromError(): State {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    const { logError } = // accessed via static context or workaround
+    logError(`AnimationOverlay: ${error.message}\n${errorInfo.componentStack}`);
+  }
+
+  render() {
+    if (this.state.hasError) return null;
+    return this.props.children;
+  }
+}
+```
+
+**DiagnosticContext integration**: Class components can't use hooks. Solution: `AnimationErrorBoundary` accepts a `fallbackRender` or accesses a module-level `logError` ref set by `DiagnosticProvider`. Simpler approach: pass `logError` as a prop from PlayerShell (which uses `useDiagnostics()` hook). Updated signature:
+
+```typescript
+interface Props {
+  children: ReactNode;
+  logError: (message: string) => void;
+}
+```
+
+PlayerShell passes `logError` from `useDiagnostics()`.
+
+### AnimationOverlay Component
+
+**File**: `src/components/AnimationOverlay.tsx`
+
+- Reads `AnimationState` from `useAnimation()` context
+- If `overlayEnabled === false` or `overlayPreset === 'none'`, returns `null`
+- Otherwise: renders the SVG component matching `overlayPreset` with:
+  - CSS class for the keyframe animation (e.g., `animate-overlay-bounce`)
+  - Inline `style={{ width: state.overlaySize, height: state.overlaySize, opacity: state.overlayOpacity }}`
+  - `will-change: transform, opacity`
+  - `position: absolute`, `pointer-events: none`
+- Container: `<div className="absolute inset-0 pointer-events-none z-[5]">` with SVG centered or positioned per preset
+
+### Overlay SVG Components
+
+Each SVG is an inline React component in `src/components/overlays/`:
+
+- `ArrowOverlay.tsx` — directional arrow, `viewBox="0 0 100 100"`, accepts `className` prop
+- `CircleHighlight.tsx` — pulsing circle highlight
+- `StarBurst.tsx` — star burst shape
+
+`overlays/index.ts` exports a `PRESET_COMPONENTS` map:
+```typescript
+export const PRESET_COMPONENTS: Record<Exclude<OverlayPreset, 'none'>, React.ComponentType<{ className?: string }>> = {
+  'bounce': ArrowOverlay,
+  'fly-across': StarBurst,
+  'pulse': CircleHighlight,
+};
+```
+
+Each preset is mapped to a specific SVG and a specific keyframe animation. Position is hardcoded per preset in the AnimationOverlay (e.g., bounce = centered, fly-across = bottom-left to top-right, pulse = top-right corner).
+
+### CSS Keyframe Definitions
+
+**File**: `src/styles/animations.css`
+
+```css
+/* Overlay animation presets */
+@keyframes overlay-bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-20px); }
+}
+
+@keyframes overlay-fly-across {
+  0% { transform: translate(0, 0); }
+  100% { transform: translate(calc(100vw - 100px), calc(-100vh + 100px)); }
+}
+
+@keyframes overlay-pulse {
+  0%, 100% { transform: scale(1); opacity: var(--overlay-opacity, 1); }
+  50% { transform: scale(1.2); opacity: calc(var(--overlay-opacity, 1) * 0.6); }
+}
+
+.animate-overlay-bounce {
+  animation: overlay-bounce 2s ease-in-out infinite;
+  will-change: transform;
+}
+
+.animate-overlay-fly-across {
+  animation: overlay-fly-across 8s linear infinite;
+  will-change: transform;
+}
+
+.animate-overlay-pulse {
+  animation: overlay-pulse 2s ease-in-out infinite;
+  will-change: transform, opacity;
+}
+```
+
+All animations use `transform` and `opacity` only (GPU-composited). No layout-triggering properties.
+
+### SettingsOverlay Changes
+
+**File**: `src/components/SettingsOverlay.tsx` — adds Animation section between Storage Usage and action buttons.
+
+New section structure:
+1. **Enable toggle** (`Switch`) — always visible. Label: "Animation Overlay". Dispatches `SET_OVERLAY_ENABLED`.
+2. **Collapsible controls** — visible only when `overlayEnabled === true`:
+   - Preset picker (`Select` dropdown) — options: None, Bounce, Fly Across, Pulse. Dispatches `SET_OVERLAY_PRESET`.
+   - Size slider (`Slider`, 32–256, step 8). Label shows current value in px. Dispatches `SET_OVERLAY_SIZE`.
+   - Opacity slider (`Slider`, 0.1–1.0, step 0.1). Label shows current value as percentage. Dispatches `SET_OVERLAY_OPACITY`.
+
+All controls dispatch immediately — no apply button. SettingsOverlay imports `useAnimation` from `AnimationContext`.
+
+### App.tsx Changes
+
+Wrap `AnimationProvider` inside `PlaybackProvider`, both receive the same `initialSettings` prop:
+
+```typescript
+<DiagnosticProvider>
+  <PlaybackProvider initialSettings={initialSettings}>
+    <AnimationProvider initialSettings={initialSettings}>
+      <AppContent />
+    </AnimationProvider>
+  </PlaybackProvider>
+</DiagnosticProvider>
+```
+
+`AnimationProvider` nested inside `PlaybackProvider` so both are available to children. No cross-dependency between the two contexts.
 
 ## Test Specifications
-*(NL test cases written during DESIGN)*
+
+### T1: Animation Context Initial State
+**Given** no animation settings in IndexedDB
+**When** `AnimationProvider` receives `initialSettings` with default values
+**Then** `overlayEnabled === false`, `overlayPreset === 'none'`, `overlaySize === 100`, `overlayOpacity === 1.0`
+
+### T2: Animation Context Actions
+**Given** AnimationProvider with default state
+**When** dispatch `SET_OVERLAY_ENABLED` with `enabled: true`
+**Then** state updates to `overlayEnabled: true`, other fields unchanged
+**And** after 500ms, `db.settings.get('current')` includes `overlayEnabled: true`
+
+### T3: Persistence Single-Writer Isolation
+**Given** PlaybackContext and AnimationContext both active
+**When** animation state changes (SET_OVERLAY_SIZE) and playback state changes (NEXT_SLIDE) within same 500ms window
+**Then** both persistence writes complete without error
+**And** final `db.settings` record contains both updated fields (no field lost)
+
+### T4: Overlay Disabled Renders Null
+**Given** `overlayEnabled === false`
+**When** AnimationOverlay renders
+**Then** component returns `null` (no DOM output)
+
+### T5: Overlay Enabled Renders SVG
+**Given** `overlayEnabled === true`, `overlayPreset === 'bounce'`
+**When** AnimationOverlay renders
+**Then** DOM contains a div with `pointer-events: none` and `z-[5]`
+**And** DOM contains the ArrowOverlay SVG component
+**And** SVG element has CSS class `animate-overlay-bounce`
+
+### T6: ErrorBoundary Catches Overlay Errors
+**Given** AnimationOverlay renders an invalid preset that throws
+**When** render error occurs
+**Then** AnimationErrorBoundary catches the error
+**And** calls `logError` with message containing error text and component stack
+**And** renders `null` (no crash, playback continues)
+
+### T7: DB v3 Migration Preserves Existing Data
+**Given** v2 database with existing settings record `{id: 'current', currentSlide: 3, interval: 10}`
+**When** database upgrades to v3
+**Then** settings record retains `currentSlide: 3, interval: 10`
+**And** gains `overlayEnabled: false, overlayPreset: 'none', overlaySize: 100, overlayOpacity: 1.0`
+
+### T8: DB v3 Migration Idempotent
+**Given** v3 database already has overlay fields
+**When** migration runs again (e.g., page reload)
+**Then** existing overlay fields unchanged (not overwritten with defaults)
+
+### T9: Corrupted DB Settings Fallback
+**Given** `db.settings.get('current')` returns record with `overlayPreset: 'invalid-value'`
+**When** `ensureSettings()` returns this record as `initialSettings`
+**Then** AnimationProvider treats unrecognized preset as `'none'` (no overlay rendered)
+**And** logs warning to DiagnosticContext
+
+### T10: Settings UI Toggle
+**Given** SettingsOverlay is open, overlay disabled
+**When** user toggles "Animation Overlay" switch ON
+**Then** animation controls section becomes visible
+**And** dispatches `SET_OVERLAY_ENABLED` with `enabled: true`
+
+### T11: Settings UI Section Collapse
+**Given** SettingsOverlay is open, overlay enabled
+**When** user toggles "Animation Overlay" switch OFF
+**Then** preset picker, size slider, opacity slider collapse (hidden)
+**And** only the enable toggle remains visible
+
+### T12: CSS Animations Use Only Transform/Opacity
+**Given** the animations.css file
+**When** all keyframe definitions are inspected
+**Then** every animated property is either `transform` or `opacity` (no layout-triggering properties)
 
 ## Research Notes
 
@@ -114,7 +458,7 @@
 - `background/box-shadow`: Paint + Composite — avoid for continuous use
 
 ## Implementation Notes
-*(To be filled during IMPLEMENTATION phase)*
+- 2026-05-13: DESIGN phase completed. All 6 prior review blockers addressed: component tree, data flow, type definitions, file layout, ErrorBoundary spec, DB v3 migration, z-index map, test specifications (T1-T12). Context structure decided: separate AnimationContext with own reducer and debounced persistence. OverlayPreset type in db.ts. AnimationErrorBoundary in PlayerShell with logError prop from useDiagnostics().
 
 ## Unit Test Results
 *(To be filled during UNIT_TEST phase)*
@@ -143,6 +487,15 @@ VERDICT: FAIL
 - 2026-05-13: Review failed during REQUIREMENTS: architecture: ```
 VERDICT: FAIL
 ```
+- 2026-05-13: Review failed during REQUIREMENTS: architecture: ```
+VERDICT: FAIL
+```
+
+## Findings
+
+- **[BLOCKER]** Design section empty (line 69). Milestone in DESIGN state. Six prior reviews flagged this. No component tree, data flow, type definitions, file layout, or integration points exist. Architecture review has no design artifact to validate. Cannot proceed to IMPLEMENTATION.
+
+- **[MAJOR]** R1.4 context structure deferred to design, but design doesn't exist. Three options listed (merged reducer, separate contexts, other) with no decision. This is the
 
 ## Findings
 
