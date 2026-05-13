@@ -23,5 +23,5 @@ Two independent systems layered onto the existing PlayerShell/PdfPlayer/PptxPlay
 | ID | Name | Description | Status | Mode |
 |----|------|-------------|--------|------|
 | 1 | Overlays MVP | AnimationContext, db v3 migration, built-in SVG overlays, AnimationOverlay component with CSS keyframe presets, wired into PlayerShell. User sees animated overlay on slides. | COMPLETE | |
-| 2 | Slide Transitions | TransitionLayer component with crossfade/slide/wipe/dissolve effects, integrated into PdfPlayer and PptxPlayer slide swapping. | PENDING | |
+| 2 | Slide Transitions | TransitionLayer component with crossfade/slide/wipe/dissolve effects, integrated into PdfPlayer and PptxPlayer slide swapping. | IN_PROGRESS | |
 | 3 | Settings UI & Uploads | Extend SettingsOverlay with transition picker, overlay picker (built-in grid + custom upload), motion/size/opacity controls. User-uploaded PNG/GIF stored in IndexedDB overlays table. | PENDING | |
