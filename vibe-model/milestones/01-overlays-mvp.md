@@ -531,7 +531,7 @@ Wrap `AnimationProvider` inside `PlaybackProvider`, both receive the same `initi
 
 ## Delivery
 
-- **PR**: (to be filled after push)
+- **PR**: https://github.com/cfogelklou/looPPT/pull/4
 - **Build**: Clean (zero errors, all artifacts: index.html, sw.js, manifest.webmanifest, assets/)
 - **Tests**: 27/27 pass across 5 files (14 milestone1 + 13 existing)
 
