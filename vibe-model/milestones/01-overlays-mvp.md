@@ -12,7 +12,7 @@
 
 **R1: Animation Context**
 - R1.1: A new React context (`AnimationContext`) manages overlay animation state (enabled/disabled, selected preset, position, size, opacity).
-- R1.2: AnimationContext reads initial values from IndexedDB on mount and persists changes with 500ms debounce (matching PlaybackContext pattern).
+- R1.2: AnimationContext receives `initialSettings` prop from App.tsx (same `Settings` object as PlaybackProvider), matching the existing init-then-render pattern. App.tsx calls `ensureSettings()` once, blocking render until DB read completes, then passes the result to both providers. Changes persist with 500ms debounce to the same `db.settings` record.
 - R1.3: AnimationContext provides default settings that render no overlay when no user configuration exists.
 
 **R2: Database Migration**
@@ -35,7 +35,7 @@
 - R5.1: `AnimationOverlay` renders as an absolutely-positioned, `pointer-events: none` layer covering the entire slide area, rendered above slide content (z-index > slide content, < SettingsOverlay).
 - R5.2: When overlay is disabled, `AnimationOverlay` renders nothing (returns null).
 - R5.3: The selected SVG asset is rendered with the configured preset animation, size, and opacity.
-- R5.4: AnimationOverlay is rendered inside `PlayerShell`, wrapping the slide content area, so it applies to both PDF and PPTX playback.
+- R5.4: AnimationOverlay is rendered inside `PlayerShell` as a sibling of `{children}` (not wrapping it), positioned absolutely above slides but below manual controls (z-index 5). Applies to both PDF and PPTX playback since both render as PlayerShell children.
 
 **R6: Settings UI — Overlay Section**
 - R6.1: SettingsOverlay MUI drawer gains a new "Animation" section below the existing controls.
@@ -102,3 +102,11 @@
 
 ## Learnings
 *(Replaces memory.md — learnings from this milestone)*
+
+- 2026-05-13: REQUIREMENTS review flagged R1.2 integration ambiguity. Resolved: AnimationContext follows same init-then-render pattern as PlaybackContext (prop-based, not self-loading). R1.2, R5.4 updated.
+
+## Findings
+
+- **[RESOLVED]** R1.2 originally said AnimationContext "reads initial values from IndexedDB on mount" but didn't specify integration with App.tsx init flow. `PlaybackProvider` receives `initialSettings` as prop — App.tsx blocks rendering until `ensureSettings()` completes (`src/App.tsx:54-56`). Resolution: extend `Settings` type + `ensureSettings()` to include overlay fields, pass same `initialSettings` prop to AnimationProvider. No separate DB read needed. R1.2 updated to specify this pattern explicitly.
+- **[MINOR]** R5.4 says "AnimationOverlay is rendered inside PlayerShell, wrapping the slide content area" but PlayerShell uses `children` prop for slides. AnimationOverlay should be a sibling of `children` inside PlayerShell's `relative` container, rendered between `{children}` and the manual controls div. No wrapping needed — just absolute positioning with higher z-index than slides but lower than controls (z-10) and settings overlay.
+- **[NOTE]** R2.1 adds 5 new fields to Settings: `overlayEnabled`, `overlayPreset`, `overlaySize`, `overlayOpacity`, `overlayPosition`. These must be added to `INITIAL_SETTINGS` with defaults (disabled, no preset, 100, 1.0, 'center-right'). Dexie v3 migration only needs to add defaults to existing 'current' record via `.upgrade()`.
