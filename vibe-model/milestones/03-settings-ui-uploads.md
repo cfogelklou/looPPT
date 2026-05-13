@@ -1,8 +1,8 @@
 # Milestone 3: Settings UI & Uploads
 
 ## Status
-- State: DELIVERY
-- Progress: 90%
+- State: COMPLETE
+- Progress: 100%
 - Started: 2026-05-13 21:32:04 UTC
 - Pending Transition: NONE
 
@@ -343,7 +343,30 @@ SettingsOverlay
 | 7 | CSS animations | PASS | All overlay classes use var(--overlay-duration); animate-overlay-custom class exists; fallback defaults correct |
 
 ## Delivery
-*(PR link, to be filled during DELIVERY phase)*
+
+- **PR**: https://github.com/cfogelklou/looPPT/pull/4 (branch `batman`)
+- **Build**: clean — `tsc && vite build` zero errors, zero warnings
+- **Tests**: 74/74 passing across 7 files
+
+### Deliverables
+
+- **Transition settings UI**: Active dropdown (5 types) + duration slider (200–2000ms) replacing placeholder
+- **Visual overlay picker**: CSS grid with preview thumbnails replacing plain Select dropdown
+- **Custom overlay uploads**: PNG/GIF/SVG upload with 2MB limit, quota check, IndexedDB storage, delete
+- **Overlay speed control**: Slider 0.5x–3.0x with CSS custom property integration
+- **DB migration v5**: `overlays` table, `overlaySpeed` field, backward-compatible
+- **22 new tests** in `milestone3.test.tsx`
+
+### Caveats
+
+- TS-10 (valid upload blob+card) and TS-12 (quota rejection) skipped — browser APIs not mockable in jsdom
+- Chunk size warning on build (existing, not introduced by this milestone)
 
 ## Learnings
-*(Replaces memory.md — learnings from this milestone)*
+
+1. **Object URL lifecycle critical in 24/7 app**: Every `URL.createObjectURL` must have matching `revokeObjectURL` in `useEffect` cleanup. Pattern: create in effect, revoke in cleanup return.
+2. **`custom:<id>` template literal preserves type union**: Extending `OverlayPreset` with template literal avoids cascading type changes. Consumer switches on `startsWith('custom:')`.
+3. **CSS custom properties for speed control**: `--overlay-duration` inline style consumed by CSS `animation-duration: var(...)` is simpler than JS animation loops. Consistent with existing CSS-only animation approach.
+4. **jsdom limits upload testing**: `FileReader`, `navigator.storage.estimate()`, and object URLs can't be faithfully mocked. Integration-level browser tests would cover these gaps.
+5. **MUI Select inside MUI Drawer needs explicit `MenuProps`**: Default portal behavior can cause z-index issues in nested drawers.
+6. **Dexie migration ordering**: Each `this` transaction in upgrade handlers must be sequential (v1→v2→v3→v4→v5). Skipping versions breaks migration chains.
