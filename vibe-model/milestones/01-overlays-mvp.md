@@ -498,6 +498,15 @@ VERDICT: FAIL
 - 2026-05-13: Review failed during REQUIREMENTS: ux: ```
 VERDICT: FAIL
 ```
+- 2026-05-13: Review failed during REQUIREMENTS: testability: ```
+VERDICT: FAIL
+```
+
+## Findings
+
+- **[MAJOR]** T9 requires runtime validation of `overlayPreset` from DB, but design's `AnimationProvider` passes `initialSettings` directly to reducer with no sanitization. If DB contains `'invalid-value'`, reducer state would hold it — no guard shown. Test expects `'none'` fallback + warning log. Either add validation logic to AnimationProvider init (reject unknown presets → default to `'none'`), or T9 tests unimplementable behavior.
+
+- **[MAJOR]** No test ve
 
 ## Findings
 
