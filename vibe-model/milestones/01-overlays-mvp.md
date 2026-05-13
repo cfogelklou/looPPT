@@ -1,8 +1,8 @@
 # Milestone 1: Overlays MVP
 
 ## Status
-- State: INTEGRATION_TEST
-- Progress: 75%
+- State: DELIVERY
+- Progress: 90%
 - Started: 2026-05-13 18:52:51 UTC
 - Pending Transition: NONE
 - Requirements Validated: 2026-05-13
@@ -515,7 +515,19 @@ Wrap `AnimationProvider` inside `PlaybackProvider`, both receive the same `initi
 - 2026-05-13: UNIT_TEST phase verified — build clean, 27/27 tests pass across 5 files. Traceability matrix: T1→"initializes with default animation state" PASS, T2→"dispatches SET_OVERLAY_ENABLED and persists after 500ms" PASS, T3→"animation and playback persist without conflict" PASS, T4a→"renders null when overlayEnabled is false" PASS, T4b→"renders null when overlayEnabled=true but overlayPreset=none" PASS, T5→"renders SVG with correct classes when enabled" PASS, T6→"ErrorBoundary catches errors and logs to diagnostic context" PASS, T7→"v3 migration adds overlay fields to existing v2 data without overwriting" PASS, T8→"v3 migration does not overwrite existing overlay fields" PASS, T9→"sanitizeAnimationSettings rejects invalid preset" PASS, T10→"toggling overlay switch ON makes animation controls visible" PASS, T11→"toggling overlay OFF hides animation controls" PASS, T12→"all keyframe definitions use only transform/opacity" PASS, T13→"ErrorBoundary key change forces remount" PASS. Edge cases covered: preset='none' with enabled=true (T4b), idempotent migration (T8), invalid preset sanitization (T9), ErrorBoundary key-based recovery (T13). No failures. Transitioning to INTEGRATION_TEST.
 
 ## Integration Test Results
-*(To be filled during INTEGRATION_TEST phase)*
+- 2026-05-13: Build clean (zero errors, all artifacts present: index.html, sw.js, manifest.webmanifest, assets/). 27/27 tests pass across 5 files.
+- 10/10 integration points verified PASS:
+  1. App.tsx provider nesting: PlaybackProvider > AnimationProvider, both receive initialSettings
+  2. AnimationContext: separate useReducer, 500ms debounce, writes only animation fields
+  3. PlaybackContext: writes only playback fields, no animation overlap
+  4. PlayerShell: AnimationErrorBoundary + AnimationOverlay as siblings of children, correct z-index layering
+  5. AnimationErrorBoundary: accepts logError prop, returns null on error, key={overlayPreset} for recovery
+  6. SettingsOverlay: imports useAnimation, has toggle/preset/size/opacity controls with aria-labels, section collapses when disabled
+  7. db.ts: OverlayPreset exported, Settings updated, v3 migration with upgradeV3Settings, INITIAL_SETTINGS includes animation defaults
+  8. animations.css: all keyframe properties are transform/opacity only, will-change set
+  9. overlays/index.ts: PRESET_COMPONENTS map for bounce/fly-across/pulse
+  10. index.css: imports ./styles/animations.css
+- No regressions found. No integration failures. All cross-component data flows match design spec.
 
 ## Delivery
 *(PR link, to be filled during DELIVERY phase)*
