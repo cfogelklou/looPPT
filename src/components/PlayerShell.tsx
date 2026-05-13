@@ -58,7 +58,7 @@ export function PlayerShell({ isLoading, error, warning, wakeLockActive, onReque
 
       {children}
 
-      {!wakeLockActive && onRequestWakeLock && (
+      {wakeLockActive === false && onRequestWakeLock && (
         <button
           onClick={onRequestWakeLock}
           className="absolute bottom-4 right-4 z-10 p-2 bg-zinc-900/80 hover:bg-zinc-800 rounded-lg text-zinc-400 hover:text-white transition-colors border border-zinc-800"

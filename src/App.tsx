@@ -14,8 +14,11 @@ function AppContent() {
   useEffect(() => { stableSince.current = Date.now(); }, []);
 
   const onNeedRefresh = useCallback((updateSW: (reload?: boolean) => Promise<void>) => {
-    if (stableSince.current && Date.now() - stableSince.current > 30_000) {
+    const elapsed = Date.now() - stableSince.current;
+    if (elapsed > 30_000) {
       updateSW(true);
+    } else {
+      setTimeout(() => updateSW(true), 30_000 - elapsed);
     }
   }, []);
 

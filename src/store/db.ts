@@ -57,6 +57,10 @@ export async function ensureSettings() {
 }
 
 export async function factoryReset() {
-  await db.delete();
+  try {
+    await db.delete();
+  } catch {
+    // IndexedDB may be blocked — proceed with reload anyway
+  }
   window.location.reload();
 }
