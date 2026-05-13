@@ -1,8 +1,8 @@
 # Milestone 1: Overlays MVP
 
 ## Status
-- State: DESIGN
-- Progress: 30%
+- State: IMPLEMENTATION
+- Progress: 40%
 - Started: 2026-05-13 18:52:51 UTC
 - Pending Transition: IMPLEMENTATION
 - Requirements Validated: 2026-05-13
@@ -76,6 +76,8 @@
 **Rationale**: Project convention is one context per domain (`PlaybackContext`, `DiagnosticContext`). PlaybackState changes every N seconds (timer-driven `NEXT_SLIDE`); animation config changes rarely (user action). Merging into one reducer couples unrelated update frequencies and would cause the debounced persistence effect to fire on every timer tick even when only animation fields changed.
 
 **Single-writer safety**: Dexie `update()` performs atomic partial merges on the `settings` record. PlaybackContext persistence writes `{currentSlide, interval, presentationId}`. AnimationContext persistence writes `{overlayEnabled, overlayPreset, overlaySize, overlayOpacity}`. No overlapping fields, no race conditions. Each context owns its own 500ms debounce timer.
+
+**Invariant**: Each context owns exclusive field subsets of `db.settings`. PlaybackContext owns `{currentSlide, interval, presentationId}`. AnimationContext owns `{overlayEnabled, overlayPreset, overlaySize, overlayOpacity}`. Neither context reads or writes the other's fields. If future migrations add read-modify-write logic, this invariant must be re-evaluated.
 
 ### Type Definitions
 
@@ -152,7 +154,7 @@ App
 │               └── Player
 │                   └── PlayerShell
 │                       ├── SettingsOverlay (z-50 gear icon, z-auto drawer)
-│                       ├── AnimationErrorBoundary  ← NEW
+│                       ├── AnimationErrorBoundary (key=overlayPreset)  ← NEW
 │                       │   └── AnimationOverlay (z-5)  ← NEW
 │                       ├── Loading Spinner (z-20)
 │                       ├── Warning Banner (z-30)
@@ -245,6 +247,43 @@ interface Props {
 
 PlayerShell passes `logError` from `useDiagnostics()`.
 
+### AnimationProvider Init Validation (T9 fix)
+
+`AnimationProvider` validates `initialSettings.overlayPreset` before passing to reducer. Unknown preset values default to `'none'`:
+
+```typescript
+const VALID_PRESETS: OverlayPreset[] = ['bounce', 'fly-across', 'pulse', 'none'];
+
+function sanitizeAnimationSettings(settings: Settings): AnimationState {
+  const preset = VALID_PRESETS.includes(settings.overlayPreset)
+    ? settings.overlayPreset
+    : 'none';
+  if (preset === 'none' && settings.overlayPreset !== 'none' && settings.overlayPreset !== undefined) {
+    console.warn(`Invalid overlayPreset "${settings.overlayPreset}", defaulting to "none"`);
+  }
+  return {
+    overlayEnabled: settings.overlayEnabled ?? false,
+    overlayPreset: preset,
+    overlaySize: settings.overlaySize ?? 100,
+    overlayOpacity: settings.overlayOpacity ?? 1.0,
+  };
+}
+```
+
+`useReducer` initializer calls `sanitizeAnimationSettings(initialSettings)`. T9 test verifies: invalid preset → state holds `'none'`, warning logged to console (DiagnosticContext logging happens in the provider component body, not the pure init function).
+
+### ErrorBoundary Recovery (key-based remount)
+
+PlayerShell renders `AnimationErrorBoundary` with `key={overlayPreset}` from `useAnimation().state.overlayPreset`. When user changes preset (invalid → valid), key change forces React to unmount the errored ErrorBoundary and mount a fresh instance. No state persistence across preset changes:
+
+```tsx
+<AnimationErrorBoundary logError={logError} key={state.overlayPreset}>
+  <AnimationOverlay />
+</AnimationErrorBoundary>
+```
+
+This ensures transient render errors don't permanently disable overlay until page reload — matching kiosk reliability requirements.
+
 ### AnimationOverlay Component
 
 **File**: `src/components/AnimationOverlay.tsx`
@@ -290,7 +329,7 @@ Each preset is mapped to a specific SVG and a specific keyframe animation. Posit
 
 @keyframes overlay-fly-across {
   0% { transform: translate(0, 0); }
-  100% { transform: translate(calc(100vw - 100px), calc(-100vh + 100px)); }
+  100% { transform: translate(calc(100% - 100px), calc(-100% + 100px)); }
 }
 
 @keyframes overlay-pulse {
@@ -396,9 +435,10 @@ Wrap `AnimationProvider` inside `PlaybackProvider`, both receive the same `initi
 
 ### T9: Corrupted DB Settings Fallback
 **Given** `db.settings.get('current')` returns record with `overlayPreset: 'invalid-value'`
-**When** `ensureSettings()` returns this record as `initialSettings`
-**Then** AnimationProvider treats unrecognized preset as `'none'` (no overlay rendered)
-**And** logs warning to DiagnosticContext
+**When** `ensureSettings()` returns this record as `initialSettings` to AnimationProvider
+**Then** `sanitizeAnimationSettings()` rejects unknown preset, defaults state to `overlayPreset: 'none'`
+**And** console warning logged: `Invalid overlayPreset "invalid-value", defaulting to "none"`
+**And** AnimationOverlay renders `null` (no crash, no overlay)
 
 ### T10: Settings UI Toggle
 **Given** SettingsOverlay is open, overlay disabled
@@ -416,6 +456,12 @@ Wrap `AnimationProvider` inside `PlaybackProvider`, both receive the same `initi
 **Given** the animations.css file
 **When** all keyframe definitions are inspected
 **Then** every animated property is either `transform` or `opacity` (no layout-triggering properties)
+
+### T13: ErrorBoundary Recovery on Preset Change
+**Given** AnimationOverlay rendering an invalid preset causes ErrorBoundary to show `null` fallback
+**When** user changes preset to a valid value (e.g., `'bounce'`) via Settings UI
+**Then** ErrorBoundary `key` prop changes → React unmounts errored instance, mounts fresh one
+**And** AnimationOverlay renders the valid preset SVG successfully (no page reload needed)
 
 ## Research Notes
 
@@ -460,7 +506,7 @@ Wrap `AnimationProvider` inside `PlaybackProvider`, both receive the same `initi
 - `background/box-shadow`: Paint + Composite — avoid for continuous use
 
 ## Implementation Notes
-- 2026-05-13: DESIGN phase completed. All 6 prior review blockers addressed: component tree, data flow, type definitions, file layout, ErrorBoundary spec, DB v3 migration, z-index map, test specifications (T1-T12). Context structure decided: separate AnimationContext with own reducer and debounced persistence. OverlayPreset type in db.ts. AnimationErrorBoundary in PlayerShell with logError prop from useDiagnostics().
+- 2026-05-13: DESIGN phase completed. All review findings addressed: component tree, data flow, type definitions, file layout, ErrorBoundary spec with key-based recovery, DB v3 migration, z-index map, preset validation at init, container-relative fly-across animation, test specifications (T1-T13). Context structure: separate AnimationContext with own reducer and debounced persistence. OverlayPreset type in db.ts. AnimationErrorBoundary in PlayerShell with logError prop from useDiagnostics(), key={overlayPreset} for recovery.
 
 ## Unit Test Results
 *(To be filled during UNIT_TEST phase)*
@@ -502,20 +548,18 @@ VERDICT: FAIL
 VERDICT: FAIL
 ```
 - 2026-05-13: Review failed during REQUIREMENTS: architecture: [MAJOR] T9 validation gap unresolved. Design specifies no sanitization of `overlayPreset` from DB in `AnimationProvider` init. `PRESET_COMPONENTS` map lookup on `'invalid-value'` returns `undefined` → render throws → ErrorBoundary catches (correct fallback) but T9 expects graceful `'none'` fallback + warning log, not error boundary path. Either: (a) validate preset in AnimationProvider init against known values, default unknown to `'none'`, log warning; or (b) update T9 to match actual behavior (ErrorBoundary catch). Design as written makes T9 unimplementable.; [MINOR] `fly-across` keyframe uses `100vw`/`100vh` viewport units (`animations.css` lines 5-6). Inside `position: absolute` container, these resolve to viewport dimensions, not parent container. In windowed mode, overlay flies beyond slide area. Acceptable for kiosk (fullscreen) but inconsistent with R5.1 "covers the entire slide area." Consider `calc(100% - 100px)` for container-relative animation.; [MINOR] ErrorBoundary has no recovery path. Once `hasError: true`, overlay renders `null` permanently. If user changes preset from invalid→valid via settings, ErrorBoundary state persists. For 24/7 kiosk, transient errors permanently disable overlay until page reload. Fix: add `key` prop tied to `overlayPreset` on ErrorBoundary to force remount on setting change.; [MINOR] Dual-writer to `db.settings` record (PlaybackContext + AnimationContext each with own 500ms debounce). Dexie `Table.update()` does atomic partial merge via `Object.assign`, so non-overlapping fields won't corrupt. But if future migration adds read-modify-write logic (e.g., conditional field updates), race window opens. Design acknowledges this risk. Acceptable for MVP, but consider documenting the invariant: "each context owns exclusive field subsets."
+- 2026-05-13: Review failed during REQUIREMENTS: architecture: ```
+VERDICT: FAIL
+```
 
 ## Findings
 
-- **[MAJOR]** T9 requires runtime validation of `overlayPreset` from DB, but design's `AnimationProvider` passes `initialSettings` directly to reducer with no sanitization. If DB contains `'invalid-value'`, reducer state would hold it — no guard shown. Test expects `'none'` fallback + warning log. Either add validation logic to AnimationProvider init (reject unknown presets → default to `'none'`), or T9 tests unimplementable behavior.
-
-- **[MAJOR]** No test ve
-
-## Findings
-
-- **[RESOLVED]** R6.5 — aria-label requirement added for all new animation controls, matching existing convention in SettingsOverlay.tsx.
-
-## Findings
-
+- **[RESOLVED]** R6.5 — aria-label requirement added for all new animation controls.
 - **[RESOLVED]** R1.2 init flow — AnimationContext uses same prop-based pattern as PlaybackContext.
 - **[RESOLVED]** R5.4 overlay is sibling of children in PlayerShell, not wrapping.
 - **[RESOLVED]** R2.1 fields added to INITIAL_SETTINGS with defaults.
-- **[RESOLVED]** Pulse opacity bug — AnimationOverlay now sets `--overlay-opacity` CSS variable for pulse keyframe.
+- **[RESOLVED]** Pulse opacity bug — AnimationOverlay sets `--overlay-opacity` CSS variable for pulse keyframe.
+- **[RESOLVED]** T9 validation gap — `sanitizeAnimationSettings()` validates `overlayPreset` at AnimationProvider init, defaults unknown to `'none'`, logs console warning.
+- **[RESOLVED]** `fly-across` viewport units — changed from `100vw`/`100vh` to `100%` for container-relative animation (consistent with R5.1).
+- **[RESOLVED]** ErrorBoundary recovery — `key={overlayPreset}` on ErrorBoundary forces remount when user changes preset, prevents permanent null state.
+- **[RESOLVED]** Dual-writer invariant — documented exclusive field subsets per context.
