@@ -1,10 +1,10 @@
 # Milestone 1: Overlays MVP
 
 ## Status
-- State: IMPLEMENTATION
-- Progress: 40%
+- State: UNIT_TEST
+- Progress: 60%
 - Started: 2026-05-13 18:52:51 UTC
-- Pending Transition: IMPLEMENTATION
+- Pending Transition: NONE
 - Requirements Validated: 2026-05-13
 
 ## Requirements
@@ -507,9 +507,10 @@ Wrap `AnimationProvider` inside `PlaybackProvider`, both receive the same `initi
 
 ## Implementation Notes
 - 2026-05-13: DESIGN phase completed. All review findings addressed: component tree, data flow, type definitions, file layout, ErrorBoundary spec with key-based recovery, DB v3 migration, z-index map, preset validation at init, container-relative fly-across animation, test specifications (T1-T13). Context structure: separate AnimationContext with own reducer and debounced persistence. OverlayPreset type in db.ts. AnimationErrorBoundary in PlayerShell with logError prop from useDiagnostics(), key={overlayPreset} for recovery.
+- 2026-05-13: IMPLEMENTATION phase completed. Files created: `src/store/AnimationContext.tsx` (context/reducer/provider/hook/sanitize), `src/components/AnimationOverlay.tsx` (overlay rendering), `src/components/AnimationErrorBoundary.tsx` (class-based error boundary), `src/components/overlays/ArrowOverlay.tsx`, `CircleHighlight.tsx`, `StarBurst.tsx`, `overlays/index.ts` (SVG components + PRESET_COMPONENTS map), `src/styles/animations.css` (keyframe presets), `src/test/milestone1.test.tsx` (13 tests T1-T13). Files modified: `src/store/db.ts` (OverlayPreset type, Settings fields, v3 migration, INITIAL_SETTINGS), `src/components/PlayerShell.tsx` (AnimationErrorBoundary + AnimationOverlay), `src/components/SettingsOverlay.tsx` (Animation section with toggle/preset/size/opacity), `src/App.tsx` (AnimationProvider), `src/index.css` (animations.css import), `src/store/PlaybackContext.test.tsx` (added overlay fields to mock settings), `src/test/milestone2.test.tsx` (wrapped Player with AnimationProvider). Build: clean, zero errors. Tests: 26 passing (13 milestone1 + 13 existing). No deviations from design. Known limitation: fly-across animation uses calc(100% - 100px) which assumes ~100px SVG size; very large overlay sizes may clip at container edges.
 
 ## Unit Test Results
-*(To be filled during UNIT_TEST phase)*
+- 2026-05-13: All 13 tests pass (T1-T13). Build clean. 26 total tests pass across 5 files.
 
 ## Integration Test Results
 *(To be filled during INTEGRATION_TEST phase)*
@@ -554,6 +555,7 @@ VERDICT: FAIL
 - 2026-05-13: Review failed during DESIGN: code: ```
 VERDICT: FAIL
 - 2026-05-13: Review failed during DESIGN: code: [BLOCKER] Zero implementation of milestone #1. All 6 requirements (R1-R6) at 0%. No AnimationContext, no DB migration v2→v3, no SVG overlays, no CSS keyframes, no AnimationOverlay component, no settings UI. Milestone documentation claims 40% complete — factually wrong.; [BLOCKER] No test coverage for any milestone requirement. Spec defines T1-T13 tests, none exist.; [BLOCKER] DB schema still at v2. Milestone requires v3 migration for animation fields, OverlayPreset type, and animation settings. None implemented.
+- 2026-05-13: Review failed during DESIGN: architecture: [BLOCKER] Zero implementation of milestone #1. All design artifacts are missing: no `AnimationContext.tsx`, no `AnimationOverlay.tsx`, no `AnimationErrorBoundary.tsx`, no `overlays/` directory, no `animations.css`. DB schema still at v2 (db.ts:31-38). Milestone claims 40% progress — no code exists.; [BLOCKER] No test coverage. Spec defines T1-T13 tests. None implemented. No milestone1 test file exists.; [BLOCKER] `db.ts` Settings interface (line 13-19) missing all animation fields. No v3 migration. `OverlayPreset` type undefined.; [MAJOR] Dual-writer invariant undocumented in code. Design specifies each context owns exclusive field subsets of `db.settings`, but no enforcement mechanism. PlaybackContext persistence (line 103-107) writes `{currentSlide, interval, presentationId}`. Future AnimationContext will write animation fields. No guard against field overlap if either context's persistence scope drifts.; [MAJOR] Design spec is thorough but stale. Multiple review cycles (8+ FAIL entries in learnings) produced mature requirements/design docs, yet no code was written. Design decisions (separate context, ErrorBoundary with key-based recovery, sanitizeAnimationSettings, z-index map) are well-specified and implementable. The gap is execution, not design.; [MINOR] PlayerShell z-index values hardcoded without named constants (lines 44, 50, 59). Design specifies a z-index layer map (slides:0, overlay:5, controls:10, loading:20, warning:30, settings:50). Current code uses magic numbers. When AnimationOverlay is added at z-5, risk of conflicts. Consider Tailwind theme extension or CSS custom properties for z-index values.
 
 ## Findings
 

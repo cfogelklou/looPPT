@@ -1,0 +1,30 @@
+/* Overlay animation presets */
+@keyframes overlay-bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-20px); }
+}
+
+@keyframes overlay-fly-across {
+  0% { transform: translate(0, 0); }
+  100% { transform: translate(calc(100% - 100px), calc(-100% + 100px)); }
+}
+
+@keyframes overlay-pulse {
+  0%, 100% { transform: scale(1); opacity: var(--overlay-opacity, 1); }
+  50% { transform: scale(1.2); opacity: calc(var(--overlay-opacity, 1) * 0.6); }
+}
+
+.animate-overlay-bounce {
+  animation: overlay-bounce 2s ease-in-out infinite;
+  will-change: transform;
+}
+
+.animate-overlay-fly-across {
+  animation: overlay-fly-across 8s linear infinite;
+  will-change: transform;
+}
+
+.animate-overlay-pulse {
+  animation: overlay-pulse 2s ease-in-out infinite;
+  will-change: transform, opacity;
+}

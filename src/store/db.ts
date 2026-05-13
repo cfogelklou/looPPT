@@ -2,6 +2,8 @@ import Dexie, { type Table } from 'dexie';
 
 export type PresentationSourceType = 'pdf' | 'pptx';
 
+export type OverlayPreset = 'bounce' | 'fly-across' | 'pulse' | 'none';
+
 export interface Presentation {
   id?: number;
   name: string;
@@ -16,6 +18,10 @@ export interface Settings {
   currentSlide: number;
   interval: number; // in seconds
   fitMode: 'contain' | 'cover';
+  overlayEnabled: boolean;
+  overlayPreset: OverlayPreset;
+  overlaySize: number;
+  overlayOpacity: number;
 }
 
 export class LooPPTDatabase extends Dexie {
@@ -36,6 +42,19 @@ export class LooPPTDatabase extends Dexie {
         pres.sourceType = 'pptx';
       });
     });
+    this.version(3).stores({
+      presentations: '++id, name, updatedAt',
+      settings: 'id'
+    }).upgrade(tx => {
+      return tx.table('settings').toCollection().modify(s => {
+        if (s.overlayEnabled === undefined) {
+          s.overlayEnabled = false;
+          s.overlayPreset = 'none';
+          s.overlaySize = 100;
+          s.overlayOpacity = 1.0;
+        }
+      });
+    });
   }
 }
 
@@ -45,7 +64,11 @@ export const INITIAL_SETTINGS: Settings = {
   id: 'current',
   currentSlide: 0,
   interval: 5,
-  fitMode: 'contain'
+  fitMode: 'contain',
+  overlayEnabled: false,
+  overlayPreset: 'none',
+  overlaySize: 100,
+  overlayOpacity: 1.0,
 };
 
 export async function ensureSettings() {

@@ -1,6 +1,7 @@
 import { render, screen, act, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { PlaybackProvider, usePlayback } from '../store/PlaybackContext';
+import { AnimationProvider } from '../store/AnimationContext';
 import { db, INITIAL_SETTINGS } from '../store/db';
 import { Player } from '../components/Player';
 import { DiagnosticProvider } from '../store/DiagnosticContext';
@@ -141,11 +142,13 @@ describe('Milestone 2: Production Kiosk Features', () => {
   // TS-2: Auto-Resume
   it('should resume from the last saved slide', async () => {
     const resumedSettings = { ...INITIAL_SETTINGS, presentationId: 1, currentSlide: 12 };
-    
+
     render(
       <DiagnosticProvider>
         <PlaybackProvider initialSettings={resumedSettings}>
-          <Player />
+          <AnimationProvider initialSettings={resumedSettings}>
+            <Player />
+          </AnimationProvider>
         </PlaybackProvider>
       </DiagnosticProvider>
     );
@@ -161,10 +164,13 @@ describe('Milestone 2: Production Kiosk Features', () => {
 
   // TS-3: Settings Accessibility
   it('should have accessible touch targets in settings', async () => {
+    const settings = { ...INITIAL_SETTINGS, presentationId: 1 };
     render(
       <DiagnosticProvider>
-        <PlaybackProvider initialSettings={{ ...INITIAL_SETTINGS, presentationId: 1 }}>
-          <Player />
+        <PlaybackProvider initialSettings={settings}>
+          <AnimationProvider initialSettings={settings}>
+            <Player />
+          </AnimationProvider>
         </PlaybackProvider>
       </DiagnosticProvider>
     );
@@ -192,10 +198,13 @@ describe('Milestone 2: Production Kiosk Features', () => {
 
   // TS-4: Wake Lock Recovery
   it('should re-acquire wake lock on visibility change', async () => {
+    const settings = { ...INITIAL_SETTINGS };
     render(
       <DiagnosticProvider>
-        <PlaybackProvider initialSettings={{ ...INITIAL_SETTINGS }}>
-          <Player />
+        <PlaybackProvider initialSettings={settings}>
+          <AnimationProvider initialSettings={settings}>
+            <Player />
+          </AnimationProvider>
         </PlaybackProvider>
       </DiagnosticProvider>
     );
@@ -213,11 +222,14 @@ describe('Milestone 2: Production Kiosk Features', () => {
 
   // TS-6: Sliding Window Limit
   it('should never render more than 3 slides in the DOM', async () => {
+    const settings = { ...INITIAL_SETTINGS, presentationId: 1 };
     await act(async () => {
       render(
         <DiagnosticProvider>
-          <PlaybackProvider initialSettings={{ ...INITIAL_SETTINGS, presentationId: 1 }}>
-            <Player />
+          <PlaybackProvider initialSettings={settings}>
+            <AnimationProvider initialSettings={settings}>
+              <Player />
+            </AnimationProvider>
           </PlaybackProvider>
         </DiagnosticProvider>
       );
@@ -231,10 +243,13 @@ describe('Milestone 2: Production Kiosk Features', () => {
 
   // TS-7: Error Failover
   it('should automatically advance after a slide render error', async () => {
+    const settings = { ...INITIAL_SETTINGS, presentationId: 1, interval: 5 };
     render(
       <DiagnosticProvider>
-        <PlaybackProvider initialSettings={{ ...INITIAL_SETTINGS, presentationId: 1, interval: 5 }}>
-          <Player />
+        <PlaybackProvider initialSettings={settings}>
+          <AnimationProvider initialSettings={settings}>
+            <Player />
+          </AnimationProvider>
         </PlaybackProvider>
       </DiagnosticProvider>
     );

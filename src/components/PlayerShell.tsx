@@ -1,7 +1,11 @@
 import React, { ReactNode } from 'react';
 import { usePlayback } from '../store/PlaybackContext';
+import { useAnimation } from '../store/AnimationContext';
+import { useDiagnostics } from '../store/DiagnosticContext';
 import { ChevronLeft, ChevronRight, Play, Pause, RefreshCcw, AlertCircle, AlertTriangle } from 'lucide-react';
 import { SettingsOverlay } from './SettingsOverlay';
+import { AnimationOverlay } from './AnimationOverlay';
+import { AnimationErrorBoundary } from './AnimationErrorBoundary';
 
 interface PlayerShellProps {
   isLoading: boolean;
@@ -12,6 +16,8 @@ interface PlayerShellProps {
 
 export function PlayerShell({ isLoading, error, warning, children }: PlayerShellProps) {
   const { state, dispatch, clearPresentation } = usePlayback();
+  const { state: animState } = useAnimation();
+  const { logError } = useDiagnostics();
 
   if (error) {
     return (
@@ -52,6 +58,10 @@ export function PlayerShell({ isLoading, error, warning, children }: PlayerShell
           <span>{warning}</span>
         </div>
       )}
+
+      <AnimationErrorBoundary logError={logError} key={animState.overlayPreset}>
+        <AnimationOverlay />
+      </AnimationErrorBoundary>
 
       {children}
 

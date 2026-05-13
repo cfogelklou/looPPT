@@ -9,13 +9,20 @@ import {
   Button,
   Divider,
   IconButton,
+  Select,
+  MenuItem,
+  InputLabel,
+  FormControl,
 } from '@mui/material';
 import { Settings as SettingsIcon, Close as CloseIcon, Info as InfoIcon } from '@mui/icons-material';
 import { usePlayback } from '../store/PlaybackContext';
+import { useAnimation } from '../store/AnimationContext';
+import type { OverlayPreset } from '../store/db';
 
 export function SettingsOverlay() {
   const [open, setOpen] = useState(false);
   const { state, dispatch, clearPresentation } = usePlayback();
+  const { state: animState, dispatch: animDispatch } = useAnimation();
   const [storageUsage, setStorageUsage] = useState<{ used: string; quota: string; percent: number } | null>(null);
 
   useEffect(() => {
@@ -104,6 +111,68 @@ export function SettingsOverlay() {
         </Box>
 
         <Divider sx={{ my: 3, borderColor: 'rgba(255,255,255,0.1)' }} />
+
+        <Box sx={{ mb: 4 }}>
+          <FormControlLabel
+            control={
+              <Switch
+                checked={animState.overlayEnabled}
+                onChange={(_, val) => animDispatch({ type: 'SET_OVERLAY_ENABLED', enabled: val })}
+                aria-label="Animation Overlay"
+              />
+            }
+            label="Animation Overlay"
+            sx={{ '.MuiTypography-root': { fontSize: '1.1rem' } }}
+          />
+
+          {animState.overlayEnabled && (
+            <Box sx={{ mt: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <FormControl fullWidth size="small">
+                <InputLabel sx={{ color: 'rgba(255,255,255,0.6)' }}>Overlay Preset</InputLabel>
+                <Select
+                  value={animState.overlayPreset}
+                  label="Overlay Preset"
+                  onChange={(e) => animDispatch({ type: 'SET_OVERLAY_PRESET', preset: e.target.value as OverlayPreset })}
+                  aria-label="Overlay Preset"
+                  sx={{ color: 'white', '.MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255,255,255,0.2)' } }}
+                >
+                  <MenuItem value="none">None</MenuItem>
+                  <MenuItem value="bounce">Bounce</MenuItem>
+                  <MenuItem value="fly-across">Fly Across</MenuItem>
+                  <MenuItem value="pulse">Pulse</MenuItem>
+                </Select>
+              </FormControl>
+
+              <Box>
+                <Typography gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  Overlay Size: <strong>{animState.overlaySize}px</strong>
+                </Typography>
+                <Slider
+                  value={animState.overlaySize}
+                  min={32}
+                  max={256}
+                  step={8}
+                  onChange={(_, val) => animDispatch({ type: 'SET_OVERLAY_SIZE', size: val as number })}
+                  aria-label="Overlay Size"
+                />
+              </Box>
+
+              <Box>
+                <Typography gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  Overlay Opacity: <strong>{Math.round(animState.overlayOpacity * 100)}%</strong>
+                </Typography>
+                <Slider
+                  value={animState.overlayOpacity}
+                  min={0.1}
+                  max={1.0}
+                  step={0.1}
+                  onChange={(_, val) => animDispatch({ type: 'SET_OVERLAY_OPACITY', opacity: val as number })}
+                  aria-label="Overlay Opacity"
+                />
+              </Box>
+            </Box>
+          )}
+        </Box>
 
         <Box sx={{ mb: 4 }}>
           <Typography variant="subtitle2" color="rgba(255,255,255,0.6)" sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
