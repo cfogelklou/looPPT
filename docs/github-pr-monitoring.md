@@ -1,6 +1,6 @@
 # GitHub PR Monitoring Workflow
 
-**Repository**: `cfogelklou/perpetual-presentation`
+**Repository**: `cfogelklou/looppt`
 **Main Branch**: `main`
 **Purpose**: Active monitoring of GitHub PRs for AI agents
 
@@ -58,7 +58,7 @@ gh pr view {PR_NUMBER} --json state,mergeable,mergeStateStatus,reviewDecision,st
 # Get ALL review comments via GraphQL (recommended)
 gh api graphql -f query='
   query {
-    repository(owner: "cfogelklou", name: "perpetual-presentation") {
+    repository(owner: "cfogelklou", name: "looppt") {
       pullRequest(number: {PR_NUMBER}) {
         reviews(first: 100) {
           nodes {
@@ -182,7 +182,7 @@ If `in_reply_to_id != null`, read ALL replies to check if already addressed:
 
 ```bash
 # Fetch all comments and filter by in_reply_to
-gh api /repos/cfogelklou/perpetual-presentation/pulls/{PR_NUMBER}/comments --jq '.[] | select(.in_reply_to == {COMMENT_ID})'
+gh api /repos/cfogelklou/looppt/pulls/{PR_NUMBER}/comments --jq '.[] | select(.in_reply_to == {COMMENT_ID})'
 ```
 
 #### b. Verify in Current Code
@@ -203,7 +203,7 @@ Use the `Read` tool to check if the issue actually exists in the current codebas
 **Quick reference** - Reply to comment ID `{COMMENT_ID}` on PR `{PR_NUMBER}`:
 
 ```bash
-gh api -X POST "/repos/cfogelklou/perpetual-presentation/pulls/{PR_NUMBER}/comments/{COMMENT_ID}/replies" \
+gh api -X POST "/repos/cfogelklou/looppt/pulls/{PR_NUMBER}/comments/{COMMENT_ID}/replies" \
   -f body="Fixed — [explain what was changed and why]"
 ```
 

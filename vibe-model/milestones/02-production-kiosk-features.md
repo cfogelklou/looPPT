@@ -38,10 +38,10 @@
 - **R7: Memory Management (Sliding Window)**
   - The application MUST implement a "sliding window" for slide rendering, keeping only a limited number of slides (e.g., current, previous, and next) in the DOM/memory at once to prevent memory leaks in 24/7 sessions.
 - **R8: Deployment Configuration**
-  - Vite configuration MUST set the `base` path to `/perpetual-presentation/`.
-  - PWA manifest MUST set `start_url` and `scope` to `/perpetual-presentation/`.
-- **R9: Polyfill & Compatibility**
-  - Resolve Vite build warning regarding Node `buffer` externalization from `@kandiforge/pptx-renderer` to ensure reliable browser runtime playback.
+  - Vite configuration MUST set the `base` path to `/looppt/`.
+  - PWA manifest MUST set `start_url` and `scope` to `/looppt/`.
+- **R9: Compatibility**
+  - The PPTX renderer uses `ArrayBuffer` (Web API) via `blob.arrayBuffer()`, not Node `Buffer`. No polyfill needed — builds cleanly without `vite-plugin-node-polyfills`.
 
 ## Design
 
@@ -79,9 +79,9 @@
 - **DOM Strategy:** Use absolute positioning and `z-index` to only show the `currentSlide`. The neighbors are rendered but hidden (e.g., `visibility: hidden` or `opacity: 0`) to keep them in memory for faster switching without clogging the DOM with hundreds of slides.
 
 ### D7: Build & Compatibility (R8, R9)
-- **Vite Config:** Add `base: '/perpetual-presentation/'`.
+- **Vite Config:** Add `base: '/looppt/'`.
 - **PWA Manifest:** Update `start_url` and `scope`.
-- **Polyfills:** Add `vite-plugin-node-polyfills` to the Vite config to provide `Buffer` for `@kandiforge/pptx-renderer`.
+- **Compatibility:** No Node polyfills needed — `@kandiforge/pptx-renderer` works with Web API `ArrayBuffer` via `blob.arrayBuffer()`.
 
 ## Test Specifications
 
@@ -117,7 +117,7 @@
 
 ## Implementation Notes
 ### Files Created/Modified:
-- `vite.config.ts`: Added base path, PWA manifest updates, and `vite-plugin-node-polyfills`.
+- `vite.config.ts`: Added base path, PWA manifest updates. Node polyfills removed — renderer uses Web API `ArrayBuffer`.
 - `src/store/PlaybackContext.tsx`: Implemented 500ms debounced persistence for slide index and interval.
 - `src/store/DiagnosticContext.tsx`: Created ring buffer (max 100) for error logging.
 - `src/hooks/useWakeLock.ts`: Created hook for Screen Wake Lock API with re-acquisition on visibility change.
@@ -176,13 +176,13 @@
   - `src/components/Player.tsx`: Sliding window rendering (prev/current/next) and error failover.
   - `src/store/PlaybackContext.tsx`: Debounced IndexedDB persistence for slide state.
   - `src/store/DiagnosticContext.tsx`: Ring-buffered error logging for long-running sessions.
-  - `vite.config.ts`: Production build paths and Node polyfills for PPTX renderer.
+  - `vite.config.ts`: Production build paths. Node polyfills removed — renderer uses Web API `ArrayBuffer`.
 - **Verification:**
   - Full Vitest suite passed (14 tests).
   - Production build successful with zero warnings.
 
 ## Learnings
-- **Node Polyfills in Vite:** The `@kandiforge/pptx-renderer` library depends on Node-native `Buffer`. Using `vite-plugin-node-polyfills` is the cleanest way to resolve this in a Vite-based project without manual shim management.
+- **No Node Polyfills Needed:** The `@kandiforge/pptx-renderer` works with Web API `ArrayBuffer` via `blob.arrayBuffer()`. The initial `vite-plugin-node-polyfills` dependency was removed — no Node `Buffer` shim required.
 - **Memory Management:** For kiosk applications running 24/7, rendering the entire slide list is not viable. A sliding window (current ± 1) keeps the DOM lean and prevents memory exhaustion over days/weeks of operation.
 - **Screen Wake Lock Lifecycle:** The lock is automatically released by the browser when the tab is hidden or minimized. It is critical to re-acquire it on `visibilitychange` to ensure the screen stays on during continuous playback.
 - **Fullscreen User Gesture:** Browsers strictly block `.requestFullscreen()` unless triggered by a direct user interaction. The `KioskEntryOverlay` pattern effectively bridges this by providing a "Start Kiosk" button that satisfies the requirement while maintaining an immersive feel.
