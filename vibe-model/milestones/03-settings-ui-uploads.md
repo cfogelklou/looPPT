@@ -1,8 +1,8 @@
 # Milestone 3: Settings UI & Uploads
 
 ## Status
-- State: INTEGRATION_TEST
-- Progress: 75%
+- State: DELIVERY
+- Progress: 90%
 - Started: 2026-05-13 21:32:04 UTC
 - Pending Transition: NONE
 
@@ -324,7 +324,23 @@ SettingsOverlay
 **Skipped tests**: TS-10 (valid upload stores blob+shows card), TS-12 (quota rejection) — documented as known limitations in Implementation Notes. These exercise browser-specific APIs (FileReader, navigator.storage) that jsdom cannot faithfully simulate.
 
 ## Integration Test Results
-*(To be filled during INTEGRATION_TEST phase)*
+
+- **Build**: clean — `tsc && vite build` zero errors, zero warnings
+- **Test suite**: 74 tests across 7 files — all passing (9.33s)
+- **Regressions**: none — all milestone 1/2 tests still pass
+- **Integration points verified**: 7/7 pass
+
+### Cross-Component Verification
+
+| # | Integration Point | Status | Detail |
+|---|---|---|---|
+| 1 | SettingsOverlay → AnimationContext dispatch | PASS | All 4 new actions (SET_TRANSITION_TYPE, SET_TRANSITION_DURATION, SET_OVERLAY_PRESET, SET_OVERLAY_SPEED) dispatched with correct payload shapes |
+| 2 | AnimationContext reducer → state | PASS | Reducer handles all new actions; overlaySpeed sanitized (0.5–3.0, default 1.0); debounced persistence to IndexedDB |
+| 3 | AnimationContext → AnimationOverlay | PASS | overlaySpeed read from context; --overlay-duration CSS var set correctly; custom:<id> path extracts ID and fetches blob |
+| 4 | AnimationContext → TransitionLayer | PASS | transitionType and transitionDuration read from context; CSS classes and --transition-duration applied |
+| 5 | DB migration v5 | PASS | overlays table added; overlaySpeed in Settings; v5 migration sets default 1.0; INITIAL_SETTINGS includes overlaySpeed |
+| 6 | Custom overlay lifecycle | PASS | Upload validates 2MB limit; blob stored to db.overlays; object URLs created with useEffect cleanup; delete resets preset to 'none' |
+| 7 | CSS animations | PASS | All overlay classes use var(--overlay-duration); animate-overlay-custom class exists; fallback defaults correct |
 
 ## Delivery
 *(PR link, to be filled during DELIVERY phase)*
