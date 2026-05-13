@@ -14,6 +14,7 @@
 - R1.1: A new React context (`AnimationContext`) manages overlay animation state (enabled/disabled, selected preset, position, size, opacity).
 - R1.2: AnimationContext receives `initialSettings` prop from App.tsx (same `Settings` object as PlaybackProvider), matching the existing init-then-render pattern. App.tsx calls `ensureSettings()` once, blocking render until DB read completes, then passes the result to both providers. Changes persist with 500ms debounce to the same `db.settings` record.
 - R1.3: AnimationContext provides default settings that render no overlay when no user configuration exists.
+- R1.4: AnimationContext must not independently write to `db.settings`. Animation state changes are coalesced with playback state through a shared debounced persistence mechanism (e.g., a `useDebouncedSettings` hook or merged into PlaybackContext), ensuring only one writer targets the `db.settings` record at a time.
 
 **R2: Database Migration**
 - R2.1: Dexie schema migrates from v2 to v3, adding animation settings fields to the `settings` table: `overlayEnabled: boolean`, `overlayPreset: string`, `overlaySize: number`, `overlayOpacity: number`, `overlayPosition: string`.
@@ -30,12 +31,15 @@
 - R4.2: Each preset is a named keyframe animation applicable via CSS class or inline style.
 - R4.3: Animation presets loop infinitely (`animation-iteration-count: infinite`).
 - R4.4: Animations use `will-change: transform, opacity` for GPU compositing.
+- R4.5: Keyframe definitions live in a dedicated `src/styles/animations.css` file, imported from `src/index.css` or `src/main.tsx`. Separating animation concerns from global styles improves maintainability as preset count grows.
 
 **R5: AnimationOverlay Component**
 - R5.1: `AnimationOverlay` renders as an absolutely-positioned, `pointer-events: none` layer covering the entire slide area, rendered above slide content (z-index > slide content, < SettingsOverlay).
 - R5.2: When overlay is disabled, `AnimationOverlay` renders nothing (returns null).
 - R5.3: The selected SVG asset is rendered with the configured preset animation, size, and opacity.
 - R5.4: AnimationOverlay is rendered inside `PlayerShell` as a sibling of `{children}` (not wrapping it), positioned absolutely above slides but below manual controls (z-index 5). Applies to both PDF and PPTX playback since both render as PlayerShell children.
+- R5.5: AnimationOverlay is wrapped in a React ErrorBoundary that catches render errors, falls back to rendering `null`, and logs the error to DiagnosticContext. This prevents overlay bugs from crashing the entire player during 24/7 kiosk operation.
+- R5.6: Z-index layer map is documented and enforced: slides (auto/0), overlay (5), manual controls (10), loading (20), warning (30), settings gear (50). Milestone 2 (transitions) layers between slides and overlay.
 
 **R6: Settings UI — Overlay Section**
 - R6.1: SettingsOverlay MUI drawer gains a new "Animation" section below the existing controls.
@@ -104,6 +108,8 @@
 *(Replaces memory.md — learnings from this milestone)*
 
 - 2026-05-13: REQUIREMENTS review flagged R1.2 integration ambiguity. Resolved: AnimationContext follows same init-then-render pattern as PlaybackContext (prop-based, not self-loading). R1.2, R5.4 updated.
+- 2026-05-13: Review failed during REQUIREMENTS: architecture: [MAJOR] R8.1 specifies "overlay errors do not crash or block playback" but no error boundary mechanism is required. React render errors from AnimationOverlay (e.g., unknown preset name → SVG component gets invalid props) will propagate to PlayerShell and kill the entire player. For a 24/7 kiosk, this is critical. Design should mandate an `ErrorBoundary` wrapping AnimationOverlay in PlayerShell, with fallback `render null` + log to DiagnosticContext. Null checks alone only cover known failure modes.; [MINOR] R1.2 specifies AnimationContext and PlaybackContext both persist independently to the same `db.settings` singleton via separate debounced writes. Dexie `update()` does partial merges, so data corruption is unlikely, but dual-writer to one record is a maintenance hazard. If either context later needs read-modify-write semantics (e.g., conditional updates), race conditions emerge. Consider: shared `useDebouncedSettings` hook owning all persistence, or merge animation state into PlaybackContext and rename.; [MINOR] CSS keyframe file location left ambiguous in research notes ("`index.css` or dedicated `animations.css`"). Design should specify. Recommend dedicated `src/styles/animations.css` — preset count will grow in later milestones, and separating animation concerns from global styles improves maintainability.; [MINOR] Z-index layering not documented as a design artifact. R5.4 specifies overlay at z-5, but the full stack (slides: auto, overlay: 5, controls: 10, loading: 20, warning: 30, settings: 50) only exists in research notes. Milestone 2 (transitions) adds another layer. A z-index map in the design doc would prevent conflicts across milestones.
+- 2026-05-13: All 4 review findings addressed in requirements. R5.5 added (ErrorBoundary). R1.4 added (shared persistence). R4.5 added (dedicated animations.css). R5.6 added (z-index map). Requirements phase complete.
 
 ## Findings
 
