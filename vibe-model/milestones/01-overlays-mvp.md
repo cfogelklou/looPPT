@@ -48,6 +48,7 @@
 - R6.2: The section contains: a toggle switch for overlay enabled/disabled, a preset picker (dropdown or button group), a size slider, an opacity slider.
 - R6.3: Changes to any animation setting take effect immediately on the overlay (no "apply" button needed).
 - R6.4: The animation section collapses (hidden) when overlay is disabled, showing only the enable toggle. Reduces visual noise when feature is off.
+- R6.5: All new animation controls include explicit `aria-label` attributes matching existing convention (`"Animation Overlay"` toggle, `"Overlay Preset"` dropdown, `"Overlay Size"` slider, `"Overlay Opacity"` slider).
 
 ### Non-Functional Requirements
 
@@ -494,6 +495,13 @@ VERDICT: FAIL
 - 2026-05-13: Review failed during REQUIREMENTS: architecture: ```
 VERDICT: FAIL
 ```
+- 2026-05-13: Review failed during REQUIREMENTS: ux: ```
+VERDICT: FAIL
+```
+
+## Findings
+
+- **[RESOLVED]** R6.5 — aria-label requirement added for all new animation controls, matching existing convention in SettingsOverlay.tsx.
 
 ## Findings
 
