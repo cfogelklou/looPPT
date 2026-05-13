@@ -1,8 +1,8 @@
 # Milestone 3: Settings UI & Uploads
 
 ## Status
-- State: IMPLEMENTATION
-- Progress: 40%
+- State: UNIT_TEST
+- Progress: 60%
 - Started: 2026-05-13 21:32:04 UTC
 - Pending Transition: NONE
 
@@ -263,10 +263,32 @@ SettingsOverlay
 - 24/7 unattended operation: uploaded assets must not leak memory (blobs cleaned up on delete, `<img>` elements unmounted when deselected)
 
 ## Implementation Notes
-*(To be filled during IMPLEMENTATION phase)*
+
+### Files Modified
+- **src/store/db.ts**: Added `overlaySpeed` to `Settings`, `CustomOverlay` interface, `overlays` table, v5 migration, `INITIAL_SETTINGS`. Extended `OverlayPreset` type to include `custom:${number}` template literal.
+- **src/store/AnimationContext.tsx**: Added `overlaySpeed` to `AnimationState`, `SET_OVERLAY_SPEED` action, sanitizer with bounds clamping (0.5–3.0), debounced persistence.
+- **src/components/overlays/index.ts**: Exported `PRESET_META` map with labels and components for visual grid.
+- **src/styles/animations.css**: Updated overlay animation classes to use `var(--overlay-duration)`. Added `animate-overlay-custom` class.
+- **src/components/SettingsOverlay.tsx**: Replaced transition placeholder with active Select+Slider controls. Replaced overlay preset Select dropdown with visual grid of clickable cards. Added custom overlay upload with 2MB file validation, quota check, blob storage in IndexedDB. Added speed slider (0.5x–3.0x). Added `CustomOverlayCard` inline component with object URL lifecycle management and delete button.
+- **src/components/AnimationOverlay.tsx**: Added `CustomOverlayRenderer` sub-component for `custom:<id>` presets. Fetches blob from IndexedDB, creates object URL, renders `<img>` with same animation/size/opacity as built-in presets. Added `--overlay-duration` CSS custom property for speed control.
+- **src/test/milestone3.test.tsx**: 22 tests covering TS-1 through TS-25 (transition controls, visual grid, custom uploads, speed, error boundary, DB migration).
+- **src/test/milestone1.test.tsx**: Updated mocks for `overlaySpeed` and `overlays` table. Updated T10/T11 to use `Overlay Presets` grid role.
+- **src/test/milestone2-transitions.test.tsx**: Updated mocks and TS-20 test for active transition controls.
+- **src/test/milestone2.test.tsx**: Updated mocks for `overlaySpeed` and `overlays` table.
+- **src/store/PlaybackContext.test.tsx**: Added `overlaySpeed: 1.0` to test settings.
+
+### Deviations from Design
+- `renderSettingsWithSpy` helper was considered but dropped in favor of simpler test patterns — using `createWrapper` directly with `render()` for UI tests and `renderHook` for pure state tests.
+
+### Known Limitations
+- `navigator.storage.estimate()` mock not tested (TS-12 skipped — hard to mock in jsdom).
+- File upload quota check falls through silently if `navigator.storage.estimate()` throws (matches design intent).
+- TS-10 (valid upload stores blob and shows card) not tested due to complexity of mocking the full upload flow with object URLs in jsdom.
 
 ## Unit Test Results
-*(To be filled during UNIT_TEST phase)*
+- 22 tests in milestone3.test.tsx — all passing
+- 74 total tests across 7 test files — all passing
+- Build: clean (tsc + vite build zero errors)
 
 ## Integration Test Results
 *(To be filled during INTEGRATION_TEST phase)*

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   Drawer,
   Box,
@@ -13,17 +13,25 @@ import {
   MenuItem,
   InputLabel,
   FormControl,
+  Alert,
+  Snackbar,
 } from '@mui/material';
-import { Settings as SettingsIcon, Close as CloseIcon, Info as InfoIcon } from '@mui/icons-material';
+import { Settings as SettingsIcon, Close as CloseIcon, Info as InfoIcon, Upload as UploadIcon, Delete as DeleteIcon } from '@mui/icons-material';
 import { usePlayback } from '../store/PlaybackContext';
 import { useAnimation } from '../store/AnimationContext';
-import type { OverlayPreset } from '../store/db';
+import { db, type OverlayPreset, type TransitionType, type CustomOverlay } from '../store/db';
+import { PRESET_META } from './overlays';
+
+const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
 
 export function SettingsOverlay() {
   const [open, setOpen] = useState(false);
   const { state, dispatch, clearPresentation } = usePlayback();
   const { state: animState, dispatch: animDispatch } = useAnimation();
   const [storageUsage, setStorageUsage] = useState<{ used: string; quota: string; percent: number } | null>(null);
+  const [customOverlays, setCustomOverlays] = useState<CustomOverlay[]>([]);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (open && navigator.storage && navigator.storage.estimate) {
@@ -38,6 +46,14 @@ export function SettingsOverlay() {
     }
   }, [open]);
 
+  const loadCustomOverlays = useCallback(() => {
+    db.overlays.toArray().then(setCustomOverlays).catch(console.error);
+  }, []);
+
+  useEffect(() => {
+    if (open) loadCustomOverlays();
+  }, [open, loadCustomOverlays]);
+
   const handleToggleFullscreen = () => {
     if (!document.fullscreenElement) {
       document.documentElement.requestFullscreen().catch(console.error);
@@ -48,6 +64,60 @@ export function SettingsOverlay() {
 
   const isFullscreen = !!document.fullscreenElement;
 
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > MAX_FILE_SIZE) {
+      setUploadError('File too large. Maximum size is 2MB.');
+      e.target.value = '';
+      return;
+    }
+
+    try {
+      const estimate = await navigator.storage.estimate();
+      const available = (estimate.quota ?? 0) - (estimate.usage ?? 0);
+      if (available < file.size) {
+        setUploadError('Insufficient storage space.');
+        e.target.value = '';
+        return;
+      }
+    } catch {
+      // If estimate fails, proceed with upload
+    }
+
+    const mimeType = file.type || 'application/octet-stream';
+    const blob = new Blob([await file.arrayBuffer()], { type: mimeType });
+
+    await db.overlays.add({
+      name: file.name,
+      blob,
+      mimeType,
+      createdAt: Date.now(),
+    });
+
+    loadCustomOverlays();
+    e.target.value = '';
+  };
+
+  const handleDeleteOverlay = async (id: number) => {
+    const presetStr = `custom:${id}` as OverlayPreset;
+    if (animState.overlayPreset === presetStr) {
+      animDispatch({ type: 'SET_OVERLAY_PRESET', preset: 'none' });
+    }
+    await db.overlays.delete(id);
+    loadCustomOverlays();
+  };
+
+  const truncateName = (name: string, maxLen = 20) =>
+    name.length > maxLen ? name.slice(0, maxLen - 1) + '…' : name;
+
+  const activePresetKey = (preset: OverlayPreset): string => {
+    if (preset === 'none') return 'none';
+    if (preset.startsWith('custom:')) return preset;
+    return preset;
+  };
+
   return (
     <>
       <div className="fixed top-4 right-4 z-50">
@@ -57,7 +127,7 @@ export function SettingsOverlay() {
             bgcolor: 'rgba(0,0,0,0.5)',
             color: 'white',
             '&:hover': { bgcolor: 'rgba(0,0,0,0.7)' },
-            width: 48, // R2: Min touch target 44x44
+            width: 48,
             height: 48,
           }}
           aria-label="Open Settings"
@@ -112,20 +182,46 @@ export function SettingsOverlay() {
 
         <Divider sx={{ my: 3, borderColor: 'rgba(255,255,255,0.1)' }} />
 
-        <Box sx={{ mb: 4, opacity: 0.5 }}>
+        {/* Transition Settings — D1: R1-R4 */}
+        <Box sx={{ mb: 4 }}>
           <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
             Slide Transitions
           </Typography>
-          <Typography variant="caption" color="rgba(255,255,255,0.4)" sx={{ display: 'block', mb: 1 }}>
-            (coming in next update)
-          </Typography>
-          <Typography variant="body2" color="rgba(255,255,255,0.5)">
-            Type: {animState.transitionType} &middot; Duration: {animState.transitionDuration}ms
-          </Typography>
+          <FormControl fullWidth size="small" sx={{ mb: 2 }}>
+            <InputLabel sx={{ color: 'rgba(255,255,255,0.6)' }}>Transition Type</InputLabel>
+            <Select
+              value={animState.transitionType}
+              label="Transition Type"
+              onChange={(e) => animDispatch({ type: 'SET_TRANSITION_TYPE', transitionType: e.target.value as TransitionType })}
+              aria-label="Transition Type"
+              sx={{ color: 'white', '.MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255,255,255,0.2)' } }}
+            >
+              <MenuItem value="none">None</MenuItem>
+              <MenuItem value="crossfade">Crossfade</MenuItem>
+              <MenuItem value="slide">Slide</MenuItem>
+              <MenuItem value="wipe">Wipe</MenuItem>
+              <MenuItem value="dissolve">Dissolve</MenuItem>
+            </Select>
+          </FormControl>
+
+          <Box>
+            <Typography gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              Duration: <strong>{animState.transitionDuration}ms</strong>
+            </Typography>
+            <Slider
+              value={animState.transitionDuration}
+              min={200}
+              max={2000}
+              step={100}
+              onChange={(_, val) => animDispatch({ type: 'SET_TRANSITION_DURATION', transitionDuration: val as number })}
+              aria-label="Transition Duration"
+            />
+          </Box>
         </Box>
 
         <Divider sx={{ my: 3, borderColor: 'rgba(255,255,255,0.1)' }} />
 
+        {/* Overlay Section — D2/D3/D5: R5-R18 */}
         <Box sx={{ mb: 4 }}>
           <FormControlLabel
             control={
@@ -141,21 +237,108 @@ export function SettingsOverlay() {
 
           {animState.overlayEnabled && (
             <Box sx={{ mt: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
-              <FormControl fullWidth size="small">
-                <InputLabel sx={{ color: 'rgba(255,255,255,0.6)' }}>Overlay Preset</InputLabel>
-                <Select
-                  value={animState.overlayPreset}
-                  label="Overlay Preset"
-                  onChange={(e) => animDispatch({ type: 'SET_OVERLAY_PRESET', preset: e.target.value as OverlayPreset })}
-                  aria-label="Overlay Preset"
-                  sx={{ color: 'white', '.MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255,255,255,0.2)' } }}
+              {/* Preset Grid — D2: R5-R8 */}
+              <Box
+                role="group"
+                aria-label="Overlay Presets"
+                sx={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fill, minmax(80px, 1fr))',
+                  gap: 1,
+                }}
+              >
+                {/* None card */}
+                <button
+                  onClick={() => animDispatch({ type: 'SET_OVERLAY_PRESET', preset: 'none' })}
+                  aria-label="None preset"
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    minWidth: 44,
+                    minHeight: 44,
+                    padding: 8,
+                    border: activePresetKey(animState.overlayPreset) === 'none'
+                      ? '2px solid #90caf9'
+                      : '1px solid rgba(255,255,255,0.2)',
+                    borderRadius: 8,
+                    background: activePresetKey(animState.overlayPreset) === 'none'
+                      ? 'rgba(144,202,249,0.1)'
+                      : 'transparent',
+                    color: 'white',
+                    cursor: 'pointer',
+                  }}
                 >
-                  <MenuItem value="none">None</MenuItem>
-                  <MenuItem value="bounce">Bounce</MenuItem>
-                  <MenuItem value="fly-across">Fly Across</MenuItem>
-                  <MenuItem value="pulse">Pulse</MenuItem>
-                </Select>
-              </FormControl>
+                  <span style={{ fontSize: 24 }}>⊘</span>
+                  <span style={{ fontSize: 11, marginTop: 4 }}>None</span>
+                </button>
+
+                {/* Built-in presets */}
+                {(Object.keys(PRESET_META) as Array<keyof typeof PRESET_META>).map((key) => {
+                  const meta = PRESET_META[key];
+                  const SvgComp = meta.component;
+                  const isActive = activePresetKey(animState.overlayPreset) === key;
+                  return (
+                    <button
+                      key={key}
+                      onClick={() => animDispatch({ type: 'SET_OVERLAY_PRESET', preset: key })}
+                      aria-label={`${meta.label} preset`}
+                      style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        minWidth: 44,
+                        minHeight: 44,
+                        padding: 8,
+                        border: isActive ? '2px solid #90caf9' : '1px solid rgba(255,255,255,0.2)',
+                        borderRadius: 8,
+                        background: isActive ? 'rgba(144,202,249,0.1)' : 'transparent',
+                        color: 'white',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      <SvgComp style={{ width: 32, height: 32 }} />
+                      <span style={{ fontSize: 11, marginTop: 4 }}>{meta.label}</span>
+                    </button>
+                  );
+                })}
+
+                {/* Custom overlays — D3: R9-R16 */}
+                {customOverlays.map((overlay) => {
+                  const presetStr = `custom:${overlay.id}` as OverlayPreset;
+                  const isActive = animState.overlayPreset === presetStr;
+                  return (
+                    <CustomOverlayCard
+                      key={overlay.id}
+                      overlay={overlay}
+                      isActive={isActive}
+                      onSelect={() => animDispatch({ type: 'SET_OVERLAY_PRESET', preset: presetStr })}
+                      onDelete={() => handleDeleteOverlay(overlay.id!)}
+                      truncatedName={truncateName(overlay.name)}
+                    />
+                  );
+                })}
+              </Box>
+
+              {/* Upload button — D3: R9 */}
+              <Button
+                variant="outlined"
+                startIcon={<UploadIcon />}
+                onClick={() => fileInputRef.current?.click()}
+                sx={{ minWidth: 44, minHeight: 44, borderColor: 'rgba(255,255,255,0.2)', color: 'rgba(255,255,255,0.7)' }}
+              >
+                Upload Overlay
+              </Button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".png,.gif,.svg"
+                style={{ display: 'none' }}
+                onChange={handleFileUpload}
+                aria-label="Upload overlay file"
+              />
 
               <Box>
                 <Typography gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -182,6 +365,21 @@ export function SettingsOverlay() {
                   step={0.1}
                   onChange={(_, val) => animDispatch({ type: 'SET_OVERLAY_OPACITY', opacity: val as number })}
                   aria-label="Overlay Opacity"
+                />
+              </Box>
+
+              {/* Speed slider — D5: R17-R18 */}
+              <Box>
+                <Typography gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  Speed: <strong>{animState.overlaySpeed}x</strong>
+                </Typography>
+                <Slider
+                  value={animState.overlaySpeed}
+                  min={0.5}
+                  max={3.0}
+                  step={0.25}
+                  onChange={(_, val) => animDispatch({ type: 'SET_OVERLAY_SPEED', speed: val as number })}
+                  aria-label="Overlay Speed"
                 />
               </Box>
             </Box>
@@ -229,16 +427,93 @@ export function SettingsOverlay() {
               dispatch({ type: 'SET_ERROR', message: 'User requested reset' });
               window.location.reload();
             }}
-            sx={{ 
-              borderColor: 'rgba(255,255,255,0.2)', 
+            sx={{
+              borderColor: 'rgba(255,255,255,0.2)',
               color: 'rgba(255,255,255,0.6)',
-              height: 48 
+              height: 48,
             }}
           >
             Reload Player
           </Button>
         </Box>
       </Drawer>
+
+      <Snackbar
+        open={!!uploadError}
+        autoHideDuration={4000}
+        onClose={() => setUploadError(null)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert severity="error" onClose={() => setUploadError(null)}>{uploadError}</Alert>
+      </Snackbar>
     </>
+  );
+}
+
+function CustomOverlayCard({ overlay, isActive, onSelect, onDelete, truncatedName }: {
+  overlay: CustomOverlay;
+  isActive: boolean;
+  onSelect: () => void;
+  onDelete: () => void;
+  truncatedName: string;
+}) {
+  const [thumbUrl, setThumbUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    const url = URL.createObjectURL(overlay.blob);
+    setThumbUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [overlay.blob]);
+
+  return (
+    <div style={{ position: 'relative' }}>
+      <button
+        onClick={onSelect}
+        aria-label={`Custom overlay: ${overlay.name}`}
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          minWidth: 44,
+          minHeight: 44,
+          padding: 8,
+          width: '100%',
+          border: isActive ? '2px solid #90caf9' : '1px solid rgba(255,255,255,0.2)',
+          borderRadius: 8,
+          background: isActive ? 'rgba(144,202,249,0.1)' : 'transparent',
+          color: 'white',
+          cursor: 'pointer',
+        }}
+      >
+        {thumbUrl && (
+          <img
+            src={thumbUrl}
+            alt={overlay.name}
+            style={{ width: 32, height: 32, objectFit: 'cover', borderRadius: 4 }}
+          />
+        )}
+        <span style={{ fontSize: 11, marginTop: 4 }}>{truncatedName}</span>
+      </button>
+      <IconButton
+        onClick={(e) => { e.stopPropagation(); onDelete(); }}
+        aria-label={`Delete ${overlay.name}`}
+        sx={{
+          position: 'absolute',
+          top: 2,
+          right: 2,
+          width: 24,
+          height: 24,
+          minHeight: 24,
+          minWidth: 24,
+          padding: 0,
+          color: 'rgba(255,255,255,0.5)',
+          '&:hover': { color: '#ef5350' },
+          '.MuiSvgIcon-root': { fontSize: 16 },
+        }}
+      >
+        <DeleteIcon />
+      </IconButton>
+    </div>
   );
 }

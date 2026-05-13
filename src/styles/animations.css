@@ -15,18 +15,23 @@
 }
 
 .animate-overlay-bounce {
-  animation: overlay-bounce 2s ease-in-out infinite;
+  animation: overlay-bounce var(--overlay-duration, 2s) ease-in-out infinite;
   will-change: transform;
 }
 
 .animate-overlay-fly-across {
-  animation: overlay-fly-across 8s linear infinite;
+  animation: overlay-fly-across var(--overlay-duration, 8s) linear infinite;
   will-change: transform;
 }
 
 .animate-overlay-pulse {
-  animation: overlay-pulse 2s ease-in-out infinite;
+  animation: overlay-pulse var(--overlay-duration, 2s) ease-in-out infinite;
   will-change: transform, opacity;
+}
+
+.animate-overlay-custom {
+  animation: overlay-bounce var(--overlay-duration, 2s) ease-in-out infinite;
+  will-change: transform;
 }
 
 /* Slide transition base */

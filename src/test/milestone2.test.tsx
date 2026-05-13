@@ -22,7 +22,13 @@ vi.mock('../store/db', () => ({
         sourceType: 'pptx',
         blob: new Blob([''], { type: 'application/vnd.openxmlformats-officedocument.presentationml.presentation' })
       }),
-    }
+    },
+    overlays: {
+      toArray: vi.fn().mockResolvedValue([]),
+      add: vi.fn().mockResolvedValue(1),
+      delete: vi.fn().mockResolvedValue(undefined),
+      get: vi.fn().mockResolvedValue(null),
+    },
   },
   INITIAL_SETTINGS: {
     id: 'current',
@@ -33,10 +39,11 @@ vi.mock('../store/db', () => ({
     overlayPreset: 'none',
     overlaySize: 100,
     overlayOpacity: 1.0,
+    overlaySpeed: 1.0,
     transitionType: 'none',
     transitionDuration: 500,
   },
-  ensureSettings: vi.fn().mockResolvedValue({ id: 'current', currentSlide: 0, interval: 5, overlayEnabled: false, overlayPreset: 'none', overlaySize: 100, overlayOpacity: 1.0, transitionType: 'none', transitionDuration: 500 })
+  ensureSettings: vi.fn().mockResolvedValue({ id: 'current', currentSlide: 0, interval: 5, overlayEnabled: false, overlayPreset: 'none', overlaySize: 100, overlayOpacity: 1.0, overlaySpeed: 1.0, transitionType: 'none', transitionDuration: 500 })
 }));
 
 // Mock pptx-renderer

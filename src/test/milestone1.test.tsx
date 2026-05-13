@@ -26,6 +26,12 @@ vi.mock('../store/db', async () => {
       presentations: {
         get: vi.fn().mockResolvedValue(null),
       },
+      overlays: {
+        toArray: vi.fn().mockResolvedValue([]),
+        add: vi.fn().mockResolvedValue(1),
+        delete: vi.fn().mockResolvedValue(undefined),
+        get: vi.fn().mockResolvedValue(null),
+      },
     },
     INITIAL_SETTINGS: {
       id: 'current',
@@ -36,6 +42,7 @@ vi.mock('../store/db', async () => {
       overlayPreset: 'none',
       overlaySize: 100,
       overlayOpacity: 1.0,
+      overlaySpeed: 1.0,
       transitionType: 'none',
       transitionDuration: 500,
     },
@@ -48,6 +55,7 @@ vi.mock('../store/db', async () => {
       overlayPreset: 'none',
       overlaySize: 100,
       overlayOpacity: 1.0,
+      overlaySpeed: 1.0,
       transitionType: 'none',
       transitionDuration: 500,
     }),
@@ -85,6 +93,7 @@ const defaultSettings: Settings = {
   overlayPreset: 'none',
   overlaySize: 100,
   overlayOpacity: 1.0,
+  overlaySpeed: 1.0,
   transitionType: 'none',
   transitionDuration: 500,
 };
@@ -342,14 +351,14 @@ describe('Milestone 1: Overlays MVP', () => {
     expect(toggle).not.toBeChecked();
 
     // Controls should not be visible yet
-    expect(screen.queryByLabelText('Overlay Preset')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Overlay Presets')).not.toBeInTheDocument();
 
     // Toggle ON
     fireEvent.click(toggle);
 
     // After toggle, controls become visible
     await waitFor(() => {
-      expect(screen.getByLabelText('Overlay Preset')).toBeInTheDocument();
+      expect(screen.getByLabelText('Overlay Presets')).toBeInTheDocument();
     });
     expect(screen.getByLabelText('Overlay Size')).toBeInTheDocument();
     expect(screen.getByLabelText('Overlay Opacity')).toBeInTheDocument();
@@ -383,7 +392,7 @@ describe('Milestone 1: Overlays MVP', () => {
 
     // Controls should be visible initially (overlay enabled)
     await waitFor(() => {
-      expect(screen.getByLabelText('Overlay Preset')).toBeInTheDocument();
+      expect(screen.getByLabelText('Overlay Presets')).toBeInTheDocument();
     });
 
     // Toggle OFF
@@ -392,7 +401,7 @@ describe('Milestone 1: Overlays MVP', () => {
 
     // After toggle, controls should collapse
     await waitFor(() => {
-      expect(screen.queryByLabelText('Overlay Preset')).not.toBeInTheDocument();
+      expect(screen.queryByLabelText('Overlay Presets')).not.toBeInTheDocument();
     });
     expect(screen.queryByLabelText('Overlay Size')).not.toBeInTheDocument();
     expect(screen.queryByLabelText('Overlay Opacity')).not.toBeInTheDocument();

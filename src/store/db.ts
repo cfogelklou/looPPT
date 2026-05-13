@@ -2,7 +2,7 @@ import Dexie, { type Table, type Transaction } from 'dexie';
 
 export type PresentationSourceType = 'pdf' | 'pptx';
 
-export type OverlayPreset = 'bounce' | 'fly-across' | 'pulse' | 'none';
+export type OverlayPreset = 'bounce' | 'fly-across' | 'pulse' | 'none' | `custom:${number}`;
 
 export type TransitionType = 'none' | 'crossfade' | 'slide' | 'wipe' | 'dissolve';
 
@@ -12,6 +12,14 @@ export interface Presentation {
   sourceType: PresentationSourceType;
   blob: Blob;
   updatedAt: number;
+}
+
+export interface CustomOverlay {
+  id?: number;
+  name: string;
+  blob: Blob;
+  mimeType: string;
+  createdAt: number;
 }
 
 export interface Settings {
@@ -24,6 +32,7 @@ export interface Settings {
   overlayPreset: OverlayPreset;
   overlaySize: number;
   overlayOpacity: number;
+  overlaySpeed: number;
   transitionType: TransitionType;
   transitionDuration: number;
 }
@@ -31,6 +40,7 @@ export interface Settings {
 export class LooPPTDatabase extends Dexie {
   presentations!: Table<Presentation>;
   settings!: Table<Settings>;
+  overlays!: Table<CustomOverlay>;
 
   constructor() {
     super('LooPPTDatabase');
@@ -54,6 +64,11 @@ export class LooPPTDatabase extends Dexie {
       presentations: '++id, name, updatedAt',
       settings: 'id'
     }).upgrade(upgradeV4Settings);
+    this.version(5).stores({
+      presentations: '++id, name, updatedAt',
+      settings: 'id',
+      overlays: '++id, name, createdAt',
+    }).upgrade(upgradeV5Settings);
   }
 }
 
@@ -77,6 +92,14 @@ export async function upgradeV4Settings(tx: Transaction) {
   });
 }
 
+export async function upgradeV5Settings(tx: Transaction) {
+  return tx.table('settings').toCollection().modify((s: Record<string, unknown>) => {
+    if (s.overlaySpeed === undefined) {
+      s.overlaySpeed = 1.0;
+    }
+  });
+}
+
 export const db = new LooPPTDatabase();
 
 export const INITIAL_SETTINGS: Settings = {
@@ -88,6 +111,7 @@ export const INITIAL_SETTINGS: Settings = {
   overlayPreset: 'none',
   overlaySize: 100,
   overlayOpacity: 1.0,
+  overlaySpeed: 1.0,
   transitionType: 'none',
   transitionDuration: 500,
 };

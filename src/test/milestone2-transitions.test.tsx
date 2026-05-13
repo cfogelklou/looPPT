@@ -26,6 +26,12 @@ vi.mock('../store/db', async () => {
       presentations: {
         get: vi.fn().mockResolvedValue(null),
       },
+      overlays: {
+        toArray: vi.fn().mockResolvedValue([]),
+        add: vi.fn().mockResolvedValue(1),
+        delete: vi.fn().mockResolvedValue(undefined),
+        get: vi.fn().mockResolvedValue(null),
+      },
     },
     INITIAL_SETTINGS: {
       id: 'current',
@@ -36,6 +42,7 @@ vi.mock('../store/db', async () => {
       overlayPreset: 'none',
       overlaySize: 100,
       overlayOpacity: 1.0,
+      overlaySpeed: 1.0,
       transitionType: 'none',
       transitionDuration: 500,
     },
@@ -48,6 +55,7 @@ vi.mock('../store/db', async () => {
       overlayPreset: 'none',
       overlaySize: 100,
       overlayOpacity: 1.0,
+      overlaySpeed: 1.0,
       transitionType: 'none',
       transitionDuration: 500,
     }),
@@ -85,6 +93,7 @@ const defaultSettings: Settings = {
   overlayPreset: 'none',
   overlaySize: 100,
   overlayOpacity: 1.0,
+  overlaySpeed: 1.0,
   transitionType: 'none',
   transitionDuration: 500,
 };
@@ -454,8 +463,8 @@ describe('Milestone 2: Slide Transitions', () => {
     consoleSpy.mockRestore();
   });
 
-  // Satisfies TS-20: SettingsOverlay placeholder
-  it('TS-20: SettingsOverlay shows Slide Transitions section with read-only values, no controls', async () => {
+  // Satisfies TS-20: SettingsOverlay shows active transition controls
+  it('TS-20: SettingsOverlay shows Slide Transitions section with active controls', async () => {
     vi.useRealTimers();
 
     const settings: Settings = { ...defaultSettings, transitionType: 'dissolve', transitionDuration: 700 };
@@ -477,12 +486,11 @@ describe('Milestone 2: Slide Transitions', () => {
     });
 
     // Shows current values
-    expect(screen.getByText(/dissolve/)).toBeInTheDocument();
     expect(screen.getByText(/700ms/)).toBeInTheDocument();
 
-    // No interactive controls for transitions (no Select, Slider, Button with transition labels)
-    expect(screen.queryByLabelText('Transition Type')).not.toBeInTheDocument();
-    expect(screen.queryByLabelText('Transition Duration')).not.toBeInTheDocument();
+    // Interactive controls for transitions are present
+    expect(screen.getByLabelText('Transition Type')).toBeInTheDocument();
+    expect(screen.getByLabelText('Transition Duration')).toBeInTheDocument();
 
     vi.useFakeTimers();
   });

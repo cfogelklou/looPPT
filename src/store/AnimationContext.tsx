@@ -6,6 +6,7 @@ export interface AnimationState {
   overlayPreset: OverlayPreset;
   overlaySize: number;
   overlayOpacity: number;
+  overlaySpeed: number;
   transitionType: TransitionType;
   transitionDuration: number;
 }
@@ -15,6 +16,7 @@ export type AnimationAction =
   | { type: 'SET_OVERLAY_PRESET'; preset: OverlayPreset }
   | { type: 'SET_OVERLAY_SIZE'; size: number }
   | { type: 'SET_OVERLAY_OPACITY'; opacity: number }
+  | { type: 'SET_OVERLAY_SPEED'; speed: number }
   | { type: 'SET_TRANSITION_TYPE'; transitionType: TransitionType }
   | { type: 'SET_TRANSITION_DURATION'; transitionDuration: number };
 
@@ -22,7 +24,8 @@ const VALID_PRESETS: OverlayPreset[] = ['bounce', 'fly-across', 'pulse', 'none']
 const VALID_TRANSITION_TYPES: TransitionType[] = ['none', 'crossfade', 'slide', 'wipe', 'dissolve'];
 
 export function sanitizeAnimationSettings(settings: Settings): AnimationState {
-  const preset = VALID_PRESETS.includes(settings.overlayPreset)
+  const isCustom = typeof settings.overlayPreset === 'string' && settings.overlayPreset.startsWith('custom:');
+  const preset = (VALID_PRESETS.includes(settings.overlayPreset as OverlayPreset) || isCustom)
     ? settings.overlayPreset
     : 'none';
   if (preset === 'none' && settings.overlayPreset !== 'none' && settings.overlayPreset !== undefined) {
@@ -41,11 +44,17 @@ export function sanitizeAnimationSettings(settings: Settings): AnimationState {
     ? rawDuration
     : 500;
 
+  const rawSpeed = settings.overlaySpeed;
+  const overlaySpeed = (typeof rawSpeed === 'number' && rawSpeed >= 0.5 && rawSpeed <= 3.0 && Number.isFinite(rawSpeed))
+    ? rawSpeed
+    : 1.0;
+
   return {
     overlayEnabled: settings.overlayEnabled ?? false,
     overlayPreset: preset,
     overlaySize: settings.overlaySize ?? 100,
     overlayOpacity: settings.overlayOpacity ?? 1.0,
+    overlaySpeed,
     transitionType,
     transitionDuration,
   };
@@ -61,6 +70,8 @@ function animationReducer(state: AnimationState, action: AnimationAction): Anima
       return { ...state, overlaySize: action.size };
     case 'SET_OVERLAY_OPACITY':
       return { ...state, overlayOpacity: action.opacity };
+    case 'SET_OVERLAY_SPEED':
+      return { ...state, overlaySpeed: action.speed };
     case 'SET_TRANSITION_TYPE':
       return { ...state, transitionType: action.transitionType };
     case 'SET_TRANSITION_DURATION':
@@ -91,6 +102,7 @@ export function AnimationProvider({ children, initialSettings }: { children: Rea
         overlayPreset: state.overlayPreset,
         overlaySize: state.overlaySize,
         overlayOpacity: state.overlayOpacity,
+        overlaySpeed: state.overlaySpeed,
         transitionType: state.transitionType,
         transitionDuration: state.transitionDuration,
       }).catch(console.error);
@@ -101,7 +113,7 @@ export function AnimationProvider({ children, initialSettings }: { children: Rea
         window.clearTimeout(saveTimeoutRef.current);
       }
     };
-  }, [state.overlayEnabled, state.overlayPreset, state.overlaySize, state.overlayOpacity, state.transitionType, state.transitionDuration]);
+  }, [state.overlayEnabled, state.overlayPreset, state.overlaySize, state.overlayOpacity, state.overlaySpeed, state.transitionType, state.transitionDuration]);
 
   return (
     <AnimationContext.Provider value={{ state, dispatch }}>
