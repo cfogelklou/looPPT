@@ -359,7 +359,7 @@ These specs are covered by the combination of TransitionLayer unit tests (TS-1 t
 ## Delivery
 
 ### Pull Request
-(PR URL to be added after PR creation)
+https://github.com/cfogelklou/looPPT/pull/4
 
 ### Deliverables
 
