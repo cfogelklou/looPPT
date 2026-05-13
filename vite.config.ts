@@ -3,17 +3,12 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 import tailwindcss from '@tailwindcss/vite'
-import { nodePolyfills } from 'vite-plugin-node-polyfills'
-
 // https://vitejs.dev/config/
 export default defineConfig({
-  base: '/perpetual-presentation/',
+  base: '/looppt/',
   plugins: [
     react(),
     tailwindcss(),
-    nodePolyfills({
-      include: ['buffer'],
-    }),
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'icon.svg'],
@@ -22,8 +17,8 @@ export default defineConfig({
         short_name: 'LooPPT',
         description: 'Perpetual Presentation Player for Kiosks',
         theme_color: '#000000',
-        start_url: '/perpetual-presentation/',
-        scope: '/perpetual-presentation/',
+        start_url: '/looppt/',
+        scope: '/looppt/',
         icons: [
           {
             src: 'icon-192x192.png',

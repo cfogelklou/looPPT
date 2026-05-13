@@ -11,19 +11,27 @@ interface PlayerShellProps {
 }
 
 export function PlayerShell({ isLoading, error, warning, children }: PlayerShellProps) {
-  const { state, dispatch } = usePlayback();
+  const { state, dispatch, clearPresentation } = usePlayback();
 
   if (error) {
     return (
       <div className="w-full h-full flex flex-col items-center justify-center bg-zinc-950 p-6 text-center">
         <AlertCircle className="w-16 h-16 text-red-500 mb-4" />
         <h2 className="text-xl font-bold text-zinc-200">{error}</h2>
-        <button
-          onClick={() => window.location.reload()}
-          className="mt-6 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg transition-colors text-white"
-        >
-          Retry
-        </button>
+        <div className="mt-6 flex gap-3">
+          <button
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg transition-colors text-white"
+          >
+            Retry
+          </button>
+          <button
+            onClick={async () => { await clearPresentation(); }}
+            className="px-4 py-2 bg-red-700 hover:bg-red-600 rounded-lg transition-colors text-white"
+          >
+            Delete &amp; Reset
+          </button>
+        </div>
       </div>
     );
   }

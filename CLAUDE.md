@@ -1,4 +1,4 @@
-# CLAUDE.md — perpetual-presentation (LooPPT)
+# CLAUDE.md — looppt (LooPPT)
 
 Offline-first PWA that loops PowerPoint presentations on kiosk screens. 24/7 unattended operation.
 
@@ -63,7 +63,7 @@ bun run test:run       # Run all tests
 
 ## Deployment
 
-- **Base path**: `/perpetual-presentation/`
+- **Base path**: `/looppt/`
 - **HTTPS required**: Wake Lock, Fullscreen API, SW all need secure context
 - No CI/CD configured yet — manual build + deploy
 

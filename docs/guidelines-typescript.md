@@ -1,6 +1,6 @@
 # TypeScript & Code Quality Guidelines
 
-Coding standards and best practices for perpetual-presentation (React 19 + Vite + TypeScript PWA).
+Coding standards and best practices for looppt (React 19 + Vite + TypeScript PWA).
 
 ## 1. The "No Magic Strings/Numbers" Rule
 

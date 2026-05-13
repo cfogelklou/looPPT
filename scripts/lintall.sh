@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# lintall.sh - Lint all components of perpetual-presentation
+# lintall.sh - Lint all components of looppt
 # Runs ESLint and TypeScript checks
 
 # Colors

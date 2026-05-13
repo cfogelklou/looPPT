@@ -1,3 +1,3 @@
--mkdir /customers/4/7/b/cfg90a6nm/webroots/www/perpetualpresentation
-put ./dist/*.* /customers/4/7/b/cfg90a6nm/webroots/www/perpetualpresentation/
-put -R ./dist/* /customers/4/7/b/cfg90a6nm/webroots/www/perpetualpresentation/
+-mkdir /customers/4/7/b/cfg90a6nm/webroots/www/looppt
+put ./dist/*.* /customers/4/7/b/cfg90a6nm/webroots/www/looppt/
+put -R ./dist/* /customers/4/7/b/cfg90a6nm/webroots/www/looppt/

@@ -38,8 +38,8 @@
 - **R7: Memory Management (Sliding Window)**
   - The application MUST implement a "sliding window" for slide rendering, keeping only a limited number of slides (e.g., current, previous, and next) in the DOM/memory at once to prevent memory leaks in 24/7 sessions.
 - **R8: Deployment Configuration**
-  - Vite configuration MUST set the `base` path to `/perpetual-presentation/`.
-  - PWA manifest MUST set `start_url` and `scope` to `/perpetual-presentation/`.
+  - Vite configuration MUST set the `base` path to `/looppt/`.
+  - PWA manifest MUST set `start_url` and `scope` to `/looppt/`.
 - **R9: Polyfill & Compatibility**
   - Resolve Vite build warning regarding Node `buffer` externalization from `@kandiforge/pptx-renderer` to ensure reliable browser runtime playback.
 
@@ -79,7 +79,7 @@
 - **DOM Strategy:** Use absolute positioning and `z-index` to only show the `currentSlide`. The neighbors are rendered but hidden (e.g., `visibility: hidden` or `opacity: 0`) to keep them in memory for faster switching without clogging the DOM with hundreds of slides.
 
 ### D7: Build & Compatibility (R8, R9)
-- **Vite Config:** Add `base: '/perpetual-presentation/'`.
+- **Vite Config:** Add `base: '/looppt/'`.
 - **PWA Manifest:** Update `start_url` and `scope`.
 - **Polyfills:** Add `vite-plugin-node-polyfills` to the Vite config to provide `Buffer` for `@kandiforge/pptx-renderer`.
 
