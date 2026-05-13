@@ -1,4 +1,4 @@
-import Dexie, { type Table } from 'dexie';
+import Dexie, { type Table, type Transaction } from 'dexie';
 
 export type PresentationSourceType = 'pdf' | 'pptx';
 
@@ -45,17 +45,19 @@ export class LooPPTDatabase extends Dexie {
     this.version(3).stores({
       presentations: '++id, name, updatedAt',
       settings: 'id'
-    }).upgrade(tx => {
-      return tx.table('settings').toCollection().modify(s => {
-        if (s.overlayEnabled === undefined) {
-          s.overlayEnabled = false;
-          s.overlayPreset = 'none';
-          s.overlaySize = 100;
-          s.overlayOpacity = 1.0;
-        }
-      });
-    });
+    }).upgrade(upgradeV3Settings);
   }
+}
+
+export async function upgradeV3Settings(tx: Transaction) {
+  return tx.table('settings').toCollection().modify((s: Record<string, unknown>) => {
+    if (s.overlayEnabled === undefined) {
+      s.overlayEnabled = false;
+      s.overlayPreset = 'none';
+      s.overlaySize = 100;
+      s.overlayOpacity = 1.0;
+    }
+  });
 }
 
 export const db = new LooPPTDatabase();
