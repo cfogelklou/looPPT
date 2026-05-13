@@ -7,7 +7,12 @@ import { useDiagnostics } from '../store/DiagnosticContext';
 
 const PPTX_WARNING = 'PPTX rendering is experimental. For best results, export as PDF and re-upload.';
 
-export function PptxPlayer() {
+interface PptxPlayerProps {
+  wakeLockActive?: boolean;
+  onRequestWakeLock?: () => void;
+}
+
+export function PptxPlayer({ wakeLockActive, onRequestWakeLock }: PptxPlayerProps) {
   const { state, dispatch } = usePlayback();
   const { logError } = useDiagnostics();
   const [data, setData] = useState<PPTXData | null>(null);
@@ -69,7 +74,7 @@ export function PptxPlayer() {
   }, [logError]);
 
   return (
-    <PlayerShell isLoading={isLoading} error={error} warning={PPTX_WARNING}>
+    <PlayerShell isLoading={isLoading} error={error} warning={PPTX_WARNING} wakeLockActive={wakeLockActive} onRequestWakeLock={onRequestWakeLock}>
       <div className="w-full h-full relative">
         {data && visibleIndices.map((idx) => (
           <div

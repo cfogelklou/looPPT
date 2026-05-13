@@ -1,26 +1,28 @@
-import React, { useEffect, useState } from 'react';
-import { ensureSettings, type Settings } from './store/db';
+import React, { useEffect, useState, useRef } from 'react';
+import { ensureSettings, factoryReset, type Settings } from './store/db';
 import { PlaybackProvider, usePlayback } from './store/PlaybackContext';
 import { DiagnosticProvider } from './store/DiagnosticContext';
 import { Player } from './components/Player';
 import { Uploader } from './components/Uploader';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { Layout } from 'lucide-react';
 import { useRegisterSW } from 'virtual:pwa-register/react';
 
 function AppContent() {
   const { state } = usePlayback();
+  const stableSince = useRef(Date.now());
   const { updateServiceWorker } = useRegisterSW({
     onNeedRefresh() {
-      // R5: Auto-apply updates
-      updateServiceWorker(true);
+      const stableMs = Date.now() - stableSince.current;
+      if (stableMs > 30_000) {
+        updateServiceWorker(true);
+      }
     },
   });
 
-  // R5: Periodically check for updates (every 1 hour)
   useEffect(() => {
     const interval = setInterval(() => {
       if (navigator.onLine) {
-        // This will trigger onNeedRefresh if an update is found
         updateServiceWorker();
       }
     }, 60 * 60 * 1000);
@@ -50,10 +52,39 @@ function AppContent() {
 
 export default function App() {
   const [initialSettings, setInitialSettings] = useState<Settings | null>(null);
+  const [startupError, setStartupError] = useState<string | null>(null);
 
   useEffect(() => {
-    ensureSettings().then(setInitialSettings);
+    ensureSettings()
+      .then(setInitialSettings)
+      .catch((err) => {
+        setStartupError(err instanceof Error ? err.message : 'Failed to initialize database.');
+      });
   }, []);
+
+  if (startupError) {
+    return (
+      <div className="min-h-screen bg-zinc-950 flex flex-col items-center justify-center p-6 text-center">
+        <div className="text-5xl mb-4">!</div>
+        <h2 className="text-xl font-bold text-zinc-200 mb-2">Startup Error</h2>
+        <p className="text-sm text-zinc-400 max-w-md mb-6">{startupError}</p>
+        <div className="flex gap-3">
+          <button
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg transition-colors text-white"
+          >
+            Retry
+          </button>
+          <button
+            onClick={() => factoryReset()}
+            className="px-4 py-2 bg-red-700 hover:bg-red-600 rounded-lg transition-colors text-white"
+          >
+            Factory Reset
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (!initialSettings) {
     return (
@@ -64,10 +95,12 @@ export default function App() {
   }
 
   return (
-    <DiagnosticProvider>
-      <PlaybackProvider initialSettings={initialSettings}>
-        <AppContent />
-      </PlaybackProvider>
-    </DiagnosticProvider>
+    <ErrorBoundary>
+      <DiagnosticProvider>
+        <PlaybackProvider initialSettings={initialSettings}>
+          <AppContent />
+        </PlaybackProvider>
+      </DiagnosticProvider>
+    </ErrorBoundary>
   );
 }

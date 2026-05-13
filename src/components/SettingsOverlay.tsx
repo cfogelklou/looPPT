@@ -142,10 +142,7 @@ export function SettingsOverlay() {
           <Button
             fullWidth
             variant="outlined"
-            onClick={() => {
-              dispatch({ type: 'SET_ERROR', message: 'User requested reset' });
-              window.location.reload();
-            }}
+            onClick={() => window.location.reload()}
             sx={{ 
               borderColor: 'rgba(255,255,255,0.2)', 
               color: 'rgba(255,255,255,0.6)',

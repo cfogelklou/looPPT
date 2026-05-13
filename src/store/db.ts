@@ -55,3 +55,8 @@ export async function ensureSettings() {
   }
   return settings || INITIAL_SETTINGS;
 }
+
+export async function factoryReset() {
+  await db.delete();
+  window.location.reload();
+}

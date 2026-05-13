@@ -1,21 +1,24 @@
 import React, { ReactNode } from 'react';
 import { usePlayback } from '../store/PlaybackContext';
-import { ChevronLeft, ChevronRight, Play, Pause, RefreshCcw, AlertCircle, AlertTriangle } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Play, Pause, RefreshCcw, AlertCircle, AlertTriangle, Maximize } from 'lucide-react';
 import { SettingsOverlay } from './SettingsOverlay';
 
 interface PlayerShellProps {
   isLoading: boolean;
   error: string | null;
   warning?: string | null;
+  wakeLockActive?: boolean;
+  onRequestWakeLock?: () => void;
   children: ReactNode;
 }
 
-export function PlayerShell({ isLoading, error, warning, children }: PlayerShellProps) {
+export function PlayerShell({ isLoading, error, warning, wakeLockActive, onRequestWakeLock, children }: PlayerShellProps) {
   const { state, dispatch, clearPresentation } = usePlayback();
 
   if (error) {
     return (
-      <div className="w-full h-full flex flex-col items-center justify-center bg-zinc-950 p-6 text-center">
+      <div className="relative w-full h-full flex flex-col items-center justify-center bg-zinc-950 p-6 text-center">
+        <SettingsOverlay />
         <AlertCircle className="w-16 h-16 text-red-500 mb-4" />
         <h2 className="text-xl font-bold text-zinc-200">{error}</h2>
         <div className="mt-6 flex gap-3">
@@ -54,6 +57,17 @@ export function PlayerShell({ isLoading, error, warning, children }: PlayerShell
       )}
 
       {children}
+
+      {!wakeLockActive && onRequestWakeLock && (
+        <button
+          onClick={onRequestWakeLock}
+          className="absolute bottom-4 right-4 z-10 p-2 bg-zinc-900/80 hover:bg-zinc-800 rounded-lg text-zinc-400 hover:text-white transition-colors border border-zinc-800"
+          aria-label="Enable Fullscreen & Wake Lock"
+          title="Enable Fullscreen & Wake Lock"
+        >
+          <Maximize className="w-5 h-5" />
+        </button>
+      )}
 
       {/* Manual Controls */}
       <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-4 bg-zinc-900/80 backdrop-blur-md px-6 py-3 rounded-full border border-zinc-800 opacity-0 group-hover:opacity-100 transition-opacity z-10">

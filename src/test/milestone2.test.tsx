@@ -29,7 +29,8 @@ vi.mock('../store/db', () => ({
     interval: 5,
     fitMode: 'contain'
   },
-  ensureSettings: vi.fn().mockResolvedValue({ id: 'current', currentSlide: 0, interval: 5 })
+  ensureSettings: vi.fn().mockResolvedValue({ id: 'current', currentSlide: 0, interval: 5 }),
+  factoryReset: vi.fn()
 }));
 
 // Mock pptx-renderer
@@ -61,6 +62,7 @@ vi.mock('lucide-react', () => ({
   Info: () => <span>Info</span>,
   Upload: () => <span>Upload</span>,
   Fullscreen: () => <span>Fullscreen</span>,
+  Maximize: () => <span>Maximize</span>,
 }));
 
 // Mock PWA register
