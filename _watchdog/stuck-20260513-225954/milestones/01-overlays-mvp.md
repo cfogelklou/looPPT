@@ -1,8 +1,8 @@
 # Milestone 1: Overlays MVP
 
 ## Status
-- State: INTEGRATION_TEST
-- Progress: 75%
+- State: UNIT_TEST
+- Progress: 60%
 - Started: 2026-05-13 18:52:51 UTC
 - Pending Transition: NONE
 - Requirements Validated: 2026-05-13
@@ -512,7 +512,6 @@ Wrap `AnimationProvider` inside `PlaybackProvider`, both receive the same `initi
 ## Unit Test Results
 - 2026-05-13: All 13 tests pass (T1-T13). Build clean. 26 total tests pass across 5 files.
 - 2026-05-13: UNIT_TEST phase — fixed test-spec mismatches from review. Changes: (1) T7 now exercises actual `upgradeV3Settings()` function with mock Dexie transaction, verifying v2→v3 field addition + data preservation. (2) T8 now exercises `upgradeV3Settings()` on already-migrated record, verifying idempotency. (3) T10 now renders SettingsOverlay, opens drawer, toggles switch via `getByRole('checkbox')`, verifies controls become visible. (4) T11 now renders SettingsOverlay with overlay enabled, toggles OFF, verifies controls collapse. (5) Added T4b test for `overlayEnabled=true + overlayPreset='none'` renders null (previously untested branch). (6) Extracted `upgradeV3Settings` from db.ts constructor into exported function for testability. (7) T12 CSS test uses Vite `?raw` import instead of Node `fs`/`path` to avoid `@types/node` dependency. (8) DB mock uses `vi.importActual` to keep real `upgradeV3Settings`. 14 milestone1 tests + 13 existing = 27 total. Build clean, zero errors.
-- 2026-05-13: UNIT_TEST phase verified — build clean, 27/27 tests pass across 5 files. Traceability matrix: T1→"initializes with default animation state" PASS, T2→"dispatches SET_OVERLAY_ENABLED and persists after 500ms" PASS, T3→"animation and playback persist without conflict" PASS, T4a→"renders null when overlayEnabled is false" PASS, T4b→"renders null when overlayEnabled=true but overlayPreset=none" PASS, T5→"renders SVG with correct classes when enabled" PASS, T6→"ErrorBoundary catches errors and logs to diagnostic context" PASS, T7→"v3 migration adds overlay fields to existing v2 data without overwriting" PASS, T8→"v3 migration does not overwrite existing overlay fields" PASS, T9→"sanitizeAnimationSettings rejects invalid preset" PASS, T10→"toggling overlay switch ON makes animation controls visible" PASS, T11→"toggling overlay OFF hides animation controls" PASS, T12→"all keyframe definitions use only transform/opacity" PASS, T13→"ErrorBoundary key change forces remount" PASS. Edge cases covered: preset='none' with enabled=true (T4b), idempotent migration (T8), invalid preset sanitization (T9), ErrorBoundary key-based recovery (T13). No failures. Transitioning to INTEGRATION_TEST.
 
 ## Integration Test Results
 *(To be filled during INTEGRATION_TEST phase)*
