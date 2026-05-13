@@ -1,8 +1,8 @@
 # Milestone 3: Settings UI & Uploads
 
 ## Status
-- State: UNIT_TEST
-- Progress: 60%
+- State: INTEGRATION_TEST
+- Progress: 75%
 - Started: 2026-05-13 21:32:04 UTC
 - Pending Transition: NONE
 
@@ -286,9 +286,42 @@ SettingsOverlay
 - TS-10 (valid upload stores blob and shows card) not tested due to complexity of mocking the full upload flow with object URLs in jsdom.
 
 ## Unit Test Results
-- 22 tests in milestone3.test.tsx — all passing
-- 74 total tests across 7 test files — all passing
-- Build: clean (tsc + vite build zero errors)
+- **Build**: clean — `tsc && vite build` zero errors, zero warnings (chunk size info only)
+- **Test suite**: 74 tests across 7 files — all passing (6.80s)
+- **Milestone 3 tests**: 22 tests in `milestone3.test.tsx` — all passing
+- **Other files**: 52 tests across 6 other files — all passing (milestone1, milestone2, milestone2-transitions, integration, smoke, PlaybackContext)
+
+### Traceability Matrix
+
+| TS | Test Name | Pass | Notes |
+|---|---|---|---|
+| TS-1 | Covered by TS-2 (dropdown visible + selectable) | — | Implicit: dropdown renders all 5 types |
+| TS-2 | selecting transition type dispatches SET_TRANSITION_TYPE | PASS | |
+| TS-3 | transition duration slider shows value in ms | PASS | |
+| TS-4 | changing duration slider dispatches SET_TRANSITION_DURATION | PASS | |
+| TS-5 | transition controls visible when overlayEnabled=false | PASS | |
+| TS-6 | preset grid shows None, Bounce, Fly Across, Pulse | PASS | |
+| TS-7 | clicking preset card dispatches SET_OVERLAY_PRESET | PASS | |
+| TS-8 | clicking None card sets preset to none, overlayEnabled stays true | PASS | |
+| TS-9 | upload button has file input accepting png/gif/svg | PASS | |
+| TS-10 | (not tested) | SKIP | Known limitation: complex upload+objectURL mock in jsdom |
+| TS-11 | file > 2MB shows error, not stored in IndexedDB | PASS | |
+| TS-12 | (not tested) | SKIP | Known limitation: navigator.storage.estimate() hard to mock in jsdom |
+| TS-13 | deleting custom overlay removes card and resets preset if selected | PASS | |
+| TS-14 | selecting custom overlay dispatches SET_OVERLAY_PRESET with custom:<id> | PASS | |
+| TS-15 | AnimationOverlay renders custom overlay as <img> | PASS | |
+| TS-16 | speed slider visible with correct label | PASS | |
+| TS-17 | changing speed dispatches SET_OVERLAY_SPEED | PASS | |
+| TS-18 | sanitizeAnimationSettings defaults overlaySpeed to 1.0 | PASS | |
+| TS-19 | grid cards have min 44x44px touch target | PASS | |
+| TS-20 | settings persist to IndexedDB after 500ms debounce | PASS | |
+| TS-21 | AnimationErrorBoundary catches custom overlay errors | PASS | |
+| TS-22 | deleting selected custom overlay resets preset to none and deletes from DB | PASS | |
+| TS-23 | (covered implicitly by drawer render + responsive grid) | — | No standalone narrow-viewport test |
+| TS-24 | v5 migration adds overlaySpeed=1.0 to existing settings | PASS | |
+| TS-25 | v5 migration does not overwrite existing overlaySpeed | PASS | |
+
+**Skipped tests**: TS-10 (valid upload stores blob+shows card), TS-12 (quota rejection) — documented as known limitations in Implementation Notes. These exercise browser-specific APIs (FileReader, navigator.storage) that jsdom cannot faithfully simulate.
 
 ## Integration Test Results
 *(To be filled during INTEGRATION_TEST phase)*
