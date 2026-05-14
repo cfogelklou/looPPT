@@ -1,13 +1,13 @@
-import { render, screen, act, fireEvent, renderHook, waitFor, within } from '@testing-library/react';
+import { render, screen, act, fireEvent, renderHook, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import React, { ReactNode } from 'react';
-import { AnimationProvider, useAnimation, sanitizeAnimationSettings, type AnimationAction } from '../store/AnimationContext';
-import { PlaybackProvider, usePlayback } from '../store/PlaybackContext';
+import { AnimationProvider, useAnimation, sanitizeAnimationSettings } from '../store/AnimationContext';
+import { PlaybackProvider } from '../store/PlaybackContext';
 import { DiagnosticProvider } from '../store/DiagnosticContext';
 import { AnimationOverlay } from '../components/AnimationOverlay';
 import { AnimationErrorBoundary } from '../components/AnimationErrorBoundary';
 import { SettingsOverlay } from '../components/SettingsOverlay';
-import { db, INITIAL_SETTINGS, upgradeV5Settings, type Settings } from '../store/db';
+import { db, upgradeV5Settings, type Settings } from '../store/db';
 
 // Mock DB
 vi.mock('../store/db', async () => {
@@ -100,7 +100,7 @@ const defaultSettings: Settings = {
 };
 
 function createWrapper(settings: Settings = defaultSettings) {
-  return ({ children }: { children: ReactNode }) => (
+  const Wrapper = ({ children }: { children: ReactNode }) => (
     <DiagnosticProvider>
       <PlaybackProvider initialSettings={settings}>
         <AnimationProvider initialSettings={settings}>
@@ -109,6 +109,8 @@ function createWrapper(settings: Settings = defaultSettings) {
       </PlaybackProvider>
     </DiagnosticProvider>
   );
+  Wrapper.displayName = 'Milestone3Wrapper';
+  return Wrapper;
 }
 
 describe('Milestone 3: Settings UI & Uploads', () => {

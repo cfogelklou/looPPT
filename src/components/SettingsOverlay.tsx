@@ -538,12 +538,12 @@ function CustomOverlayCard({ overlay, isActive, onSelect, onDelete, truncatedNam
         aria-label={`Delete ${overlay.name}`}
         sx={{
           position: 'absolute',
-          top: 2,
-          right: 2,
-          width: 24,
-          height: 24,
-          minHeight: 24,
-          minWidth: 24,
+          top: -4,
+          right: -4,
+          width: 32,
+          height: 32,
+          minHeight: 32,
+          minWidth: 32,
           padding: 0,
           color: 'rgba(255,255,255,0.5)',
           '&:hover': { color: '#ef5350' },

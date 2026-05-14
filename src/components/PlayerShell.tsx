@@ -94,7 +94,7 @@ export function PlayerShell({ isLoading, error, warning, children }: PlayerShell
 
       {children}
 
-      {/* Kiosk exit zone — 5 taps in 3s to exit */}
+      {/* Kiosk exit zone — 3 taps in 3s to exit */}
       {isKiosk && <KioskExitZone onExit={exitKiosk} />}
 
       {/* Manual Controls */}
@@ -136,6 +136,7 @@ export function PlayerShell({ isLoading, error, warning, children }: PlayerShell
 function KioskExitZone({ onExit }: { onExit: () => void }) {
   const taps = useRef<number[]>([]);
   const [hintVisible, setHintVisible] = useState(false);
+  const hintTimerRef = useRef<number | null>(null);
 
   const handleTap = useCallback(() => {
     const now = Date.now();
@@ -143,13 +144,18 @@ function KioskExitZone({ onExit }: { onExit: () => void }) {
     taps.current = taps.current.filter(t => now - t < 3000);
     taps.current.push(now);
 
+    if (hintTimerRef.current != null) {
+      clearTimeout(hintTimerRef.current);
+      hintTimerRef.current = null;
+    }
+
     if (taps.current.length >= 3) {
       taps.current = [];
       setHintVisible(false);
       onExit();
     } else if (taps.current.length >= 2) {
       setHintVisible(true);
-      setTimeout(() => setHintVisible(false), 2000);
+      hintTimerRef.current = window.setTimeout(() => setHintVisible(false), 2000);
     }
   }, [onExit]);
 

@@ -160,7 +160,15 @@ export function PdfPlayer() {
     <PlayerShell isLoading={isLoading} error={error}>
       <div ref={containerRef} className="w-full h-full relative">
         {pdfDoc && (
-          <TransitionErrorBoundary currentSlideIndex={current} logError={logError}>
+          <TransitionErrorBoundary
+            currentSlideIndex={current}
+            logError={logError}
+            slides={visibleIndices.map((idx) => (
+              <div key={idx}>
+                <canvas ref={(el) => { if (el) canvasRefs.current.set(idx, el); }} />
+              </div>
+            ))}
+          >
             <TransitionLayer currentSlideIndex={current}>
               {visibleIndices.map((idx) => (
                 <div key={idx}>

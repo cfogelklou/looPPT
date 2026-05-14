@@ -42,13 +42,6 @@ export function TransitionLayer({ currentSlideIndex, children }: TransitionLayer
     '--transition-duration': `${duration}ms`,
   }) as React.CSSProperties, [duration]);
 
-  const childMap = new Map<number, ReactElement>();
-  for (const child of children) {
-    if (child.key != null) {
-      childMap.set(Number(child.key), child);
-    }
-  }
-
   return (
     <div
       className={`slide-transition-container transition-${transitionType}`}

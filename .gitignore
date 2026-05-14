@@ -10,3 +10,5 @@ test.pdf
 test.pptx
 .playwright-mcp/
 *.png
+.vibe-model-run.pid
+_watchdog/

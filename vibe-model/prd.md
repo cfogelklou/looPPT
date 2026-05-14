@@ -10,13 +10,13 @@ Add two independent animation systems to LooPPT: animated overlays (SVG/PNG asse
 - **Framework**: React 19 + TypeScript 6
 - **Build**: Vite 8
 - **Styling**: Tailwind CSS 4 + MUI 5 (emotion) — existing stack, no additions
-- **Persistence**: Dexie.js (IndexedDB) — schema migration to v3
+- **Persistence**: Dexie.js (IndexedDB) — schema migration to v6
 - **Testing**: Vitest + React Testing Library + jsdom
 - **Animation**: CSS keyframes + CSS transitions (no JS animation loops)
 
 ## Architecture Overview
 
-Two independent systems layered onto the existing PlayerShell/PdfPlayer/PptxPlayer architecture. **AnimationOverlay** renders an absolutely-positioned, pointer-events-none layer above slide content, driven by CSS keyframe presets (bounce, fly, float, orbit, pulse). **TransitionLayer** wraps the slide rendering area inside PdfPlayer/PptxPlayer, applying CSS transition effects on slide index change. A new **AnimationContext** manages overlay/transition settings with debounced IndexedDB persistence, resolving global defaults. The existing **SettingsOverlay** MUI drawer gains two new sections for configuration. DB schema migrates to v3 with animation settings fields and an `overlays` table for user-uploaded assets.
+Two independent systems layered onto the existing PlayerShell/PdfPlayer/PptxPlayer architecture. **AnimationOverlay** renders an absolutely-positioned, pointer-events-none layer above slide content, driven by CSS keyframe presets (bounce, fly, float, orbit, pulse). **TransitionLayer** wraps the slide rendering area inside PdfPlayer/PptxPlayer, applying CSS transition effects on slide index change. A new **AnimationContext** manages overlay/transition settings with debounced IndexedDB persistence, resolving global defaults. The existing **SettingsOverlay** MUI drawer gains two new sections for configuration. DB schema migrates to v6 with animation settings fields and an `overlays` table for user-uploaded assets.
 
 ## Milestones
 

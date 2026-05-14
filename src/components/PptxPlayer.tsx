@@ -76,7 +76,22 @@ export function PptxPlayer() {
     <PlayerShell isLoading={isLoading} error={error} warning={PPTX_WARNING}>
       <div className="w-full h-full relative">
         {data && (
-          <TransitionErrorBoundary currentSlideIndex={current} logError={logError}>
+          <TransitionErrorBoundary
+            currentSlideIndex={current}
+            logError={logError}
+            slides={visibleIndices.map((idx) => (
+              <div key={idx}>
+                <SlideView
+                  slide={data.slides[idx]}
+                  slideWidth={data.size.width}
+                  slideHeight={data.size.height}
+                  width={dimensions.width}
+                  height={dimensions.height}
+                  onRenderError={(err: Error) => handleRenderError(idx, err)}
+                />
+              </div>
+            ))}
+          >
             <TransitionLayer currentSlideIndex={current}>
               {visibleIndices.map((idx) => (
                 <div key={idx}>

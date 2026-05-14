@@ -85,6 +85,10 @@ export function AnimationOverlay() {
 
   const show = useCallback(() => {
     setVisible(true);
+    // Clear previous hide timer before scheduling new one
+    if (animTimerRef.current != null) {
+      clearTimeout(animTimerRef.current);
+    }
     // Hide after animation completes
     animTimerRef.current = window.setTimeout(() => {
       setVisible(false);

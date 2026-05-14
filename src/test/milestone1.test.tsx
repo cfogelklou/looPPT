@@ -3,13 +3,13 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import React, { ReactNode } from 'react';
 import { AnimationProvider, useAnimation, sanitizeAnimationSettings } from '../store/AnimationContext';
 import { PlaybackProvider, usePlayback } from '../store/PlaybackContext';
-import { DiagnosticProvider, useDiagnostics } from '../store/DiagnosticContext';
+import { DiagnosticProvider } from '../store/DiagnosticContext';
 import { AnimationOverlay } from '../components/AnimationOverlay';
 import { AnimationErrorBoundary } from '../components/AnimationErrorBoundary';
 import { SettingsOverlay } from '../components/SettingsOverlay';
-import { db, INITIAL_SETTINGS, upgradeV3Settings, type Settings } from '../store/db';
+import { db, upgradeV3Settings, type Settings } from '../store/db';
 
-// @ts-ignore Vite raw import for CSS content inspection
+// @ts-expect-error Vite raw import for CSS content inspection
 import animationsCss from '../styles/animations.css?raw';
 
 // Mock DB — keep real upgradeV3Settings for T7/T8
@@ -102,7 +102,7 @@ const defaultSettings: Settings = {
 };
 
 function createWrapper(settings: Settings = defaultSettings) {
-  return ({ children }: { children: ReactNode }) => (
+  const Wrapper = ({ children }: { children: ReactNode }) => (
     <DiagnosticProvider>
       <PlaybackProvider initialSettings={settings}>
         <AnimationProvider initialSettings={settings}>
@@ -111,6 +111,8 @@ function createWrapper(settings: Settings = defaultSettings) {
       </PlaybackProvider>
     </DiagnosticProvider>
   );
+  Wrapper.displayName = 'Milestone1Wrapper';
+  return Wrapper;
 }
 
 describe('Milestone 1: Overlays MVP', () => {

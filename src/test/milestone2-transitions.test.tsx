@@ -2,14 +2,14 @@ import { render, screen, act, fireEvent, renderHook, waitFor } from '@testing-li
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import React, { ReactNode } from 'react';
 import { AnimationProvider, useAnimation, sanitizeAnimationSettings } from '../store/AnimationContext';
-import { PlaybackProvider, usePlayback } from '../store/PlaybackContext';
+import { PlaybackProvider } from '../store/PlaybackContext';
 import { DiagnosticProvider } from '../store/DiagnosticContext';
 import { TransitionLayer } from '../components/TransitionLayer';
 import { TransitionErrorBoundary } from '../components/TransitionErrorBoundary';
 import { SettingsOverlay } from '../components/SettingsOverlay';
-import { db, INITIAL_SETTINGS, upgradeV4Settings, type Settings, type TransitionType } from '../store/db';
+import { db, upgradeV4Settings, type Settings, type TransitionType } from '../store/db';
 
-// @ts-ignore Vite raw import for CSS content inspection
+// @ts-expect-error Vite raw import for CSS content inspection
 import animationsCss from '../styles/animations.css?raw';
 
 // Mock DB
@@ -101,8 +101,8 @@ const defaultSettings: Settings = {
   transitionDuration: 500,
 };
 
-function createTransitionWrapper(settings: Settings = defaultSettings, onSlideChange?: (idx: number) => void) {
-  return ({ children }: { children: ReactNode }) => (
+function createTransitionWrapper(settings: Settings = defaultSettings, _onSlideChange?: (idx: number) => void) {
+  const Wrapper = ({ children }: { children: ReactNode }) => (
     <DiagnosticProvider>
       <PlaybackProvider initialSettings={settings}>
         <AnimationProvider initialSettings={settings}>
@@ -111,6 +111,8 @@ function createTransitionWrapper(settings: Settings = defaultSettings, onSlideCh
       </PlaybackProvider>
     </DiagnosticProvider>
   );
+  Wrapper.displayName = 'TransitionWrapper';
+  return Wrapper;
 }
 
 // Helper: renders TransitionLayer with given settings and slide count
@@ -445,6 +447,7 @@ describe('Milestone 2: Slide Transitions', () => {
     const logError = vi.fn();
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
+    // eslint-disable-next-line react/require-render-return
     class ThrowingChild extends React.Component {
       render(): React.ReactNode {
         throw new Error('Test transition error');
@@ -452,16 +455,16 @@ describe('Milestone 2: Slide Transitions', () => {
     }
 
     const { container } = render(
-      <TransitionErrorBoundary currentSlideIndex={0} logError={logError}>
+      <TransitionErrorBoundary currentSlideIndex={0} logError={logError} slides={[<div key={0}>Slide 0</div>]}>
         <ThrowingChild />
       </TransitionErrorBoundary>
     );
 
     expect(logError).toHaveBeenCalledTimes(1);
     expect(logError).toHaveBeenCalledWith(expect.stringContaining('Test transition error'));
-    // Fallback renders a basic container (not the throwing children)
+    // Fallback renders slide content directly (bypassing transitions)
     expect(container.querySelector('.w-full')).toBeTruthy();
-    expect(container.textContent).toContain('transitions disabled');
+    expect(container.textContent).toContain('Transition error');
 
     consoleSpy.mockRestore();
   });

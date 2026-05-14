@@ -1,4 +1,3 @@
-import type { OverlayPreset } from '../../store/db';
 import { ArrowOverlay } from './ArrowOverlay';
 import { CircleHighlight } from './CircleHighlight';
 import { StarBurst } from './StarBurst';
