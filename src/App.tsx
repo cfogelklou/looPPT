@@ -5,6 +5,7 @@ import { DiagnosticProvider } from './store/DiagnosticContext';
 import { AnimationProvider } from './store/AnimationContext';
 import { Player } from './components/Player';
 import { Uploader } from './components/Uploader';
+import { SettingsOverlay } from './components/SettingsOverlay';
 import { Layout } from 'lucide-react';
 import { useRegisterSW } from 'virtual:pwa-register/react';
 
@@ -31,18 +32,21 @@ function AppContent() {
 
   if (!state.presentationId) {
     return (
-      <div className="min-h-screen bg-background text-foreground flex flex-col items-center justify-center p-4">
-        <div className="mb-12 text-center">
-          <div className="flex items-center justify-center mb-4">
-            <div className="p-3 bg-blue-600 rounded-2xl shadow-xl shadow-blue-900/20">
-              <Layout className="w-10 h-10 text-white" />
+      <>
+        <div className="min-h-screen bg-background text-foreground flex flex-col items-center justify-center p-4">
+          <div className="mb-12 text-center">
+            <div className="flex items-center justify-center mb-4">
+              <div className="p-3 bg-blue-600 rounded-2xl shadow-xl shadow-blue-900/20">
+                <Layout className="w-10 h-10 text-white" />
+              </div>
             </div>
+            <h1 className="text-4xl font-bold tracking-tight mb-2">LooPPT</h1>
+            <p className="text-zinc-500">Perpetual Presentation Loop Player</p>
           </div>
-          <h1 className="text-4xl font-bold tracking-tight mb-2">LooPPT</h1>
-          <p className="text-zinc-500">Perpetual Presentation Loop Player</p>
+          <Uploader />
         </div>
-        <Uploader />
-      </div>
+        <SettingsOverlay alwaysShowGear />
+      </>
     );
   }
 

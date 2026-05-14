@@ -17,26 +17,30 @@ import {
   Snackbar,
   TextField,
 } from '@mui/material';
-import { Settings as SettingsIcon, Close as CloseIcon, Info as InfoIcon, Upload as UploadIcon, Delete as DeleteIcon, Monitor as MonitorIcon } from '@mui/icons-material';
+import { Settings as SettingsIcon, Close as CloseIcon, Info as InfoIcon, Upload as UploadIcon, Delete as DeleteIcon, Monitor as MonitorIcon, FileDownload as FileDownloadIcon, FileUpload as FileUploadIcon } from '@mui/icons-material';
 import { usePlayback } from '../store/PlaybackContext';
 import { useAnimation } from '../store/AnimationContext';
 import { db, type OverlayPreset, type TransitionType, type CustomOverlay } from '../store/db';
+import { exportSlideshow, importSlideshow, SlideshowIOError } from '../store/slideshowIO';
 import { PRESET_META } from './overlays';
 
 const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
 
 interface SettingsOverlayProps {
   onEnterKiosk?: () => void;
+  alwaysShowGear?: boolean;
 }
 
-export function SettingsOverlay({ onEnterKiosk }: SettingsOverlayProps) {
+export function SettingsOverlay({ onEnterKiosk, alwaysShowGear }: SettingsOverlayProps) {
   const [open, setOpen] = useState(false);
   const { state, dispatch, clearPresentation } = usePlayback();
   const { state: animState, dispatch: animDispatch } = useAnimation();
   const [storageUsage, setStorageUsage] = useState<{ used: string; quota: string; percent: number } | null>(null);
   const [customOverlays, setCustomOverlays] = useState<CustomOverlay[]>([]);
-  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [uiError, setUiError] = useState<string | null>(null);
+  const [ioBusy, setIoBusy] = useState<'exporting' | 'importing' | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const importInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (open && navigator.storage && navigator.storage.estimate) {
@@ -74,7 +78,7 @@ export function SettingsOverlay({ onEnterKiosk }: SettingsOverlayProps) {
     if (!file) return;
 
     if (file.size > MAX_FILE_SIZE) {
-      setUploadError('File too large. Maximum size is 2MB.');
+      setUiError('File too large. Maximum size is 2MB.');
       e.target.value = '';
       return;
     }
@@ -83,7 +87,7 @@ export function SettingsOverlay({ onEnterKiosk }: SettingsOverlayProps) {
       const estimate = await navigator.storage.estimate();
       const available = (estimate.quota ?? 0) - (estimate.usage ?? 0);
       if (available < file.size) {
-        setUploadError('Insufficient storage space.');
+        setUiError('Insufficient storage space.');
         e.target.value = '';
         return;
       }
@@ -123,9 +127,49 @@ export function SettingsOverlay({ onEnterKiosk }: SettingsOverlayProps) {
     return preset;
   };
 
+  const handleExport = async () => {
+    setIoBusy('exporting');
+    setUiError(null);
+    try {
+      await exportSlideshow();
+    } catch (err) {
+      setUiError(
+        err instanceof SlideshowIOError
+          ? err.message
+          : 'Export failed unexpectedly.',
+      );
+    } finally {
+      setIoBusy(null);
+    }
+  };
+
+  const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.name.toLowerCase().endsWith('.zip')) {
+      setUiError('Please select a .zip file.');
+      e.target.value = '';
+      return;
+    }
+    setIoBusy('importing');
+    setUiError(null);
+    try {
+      await importSlideshow(file);
+      window.location.reload();
+    } catch (err) {
+      setUiError(
+        err instanceof SlideshowIOError
+          ? err.message
+          : 'Import failed unexpectedly.',
+      );
+      setIoBusy(null);
+    }
+    e.target.value = '';
+  };
+
   return (
     <>
-      <div className="fixed top-4 right-4 z-50 opacity-0 group-hover:opacity-100 transition-opacity">
+      <div className={`fixed top-4 right-4 z-50 transition-opacity ${alwaysShowGear ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
         <IconButton
           onClick={() => setOpen(true)}
           sx={{
@@ -480,6 +524,44 @@ export function SettingsOverlay({ onEnterKiosk }: SettingsOverlayProps) {
           )}
         </Box>
 
+        <Divider sx={{ my: 3, borderColor: 'rgba(255,255,255,0.1)' }} />
+
+        <Box sx={{ mb: 3 }}>
+          <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
+            Slideshow Transfer
+          </Typography>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+            <Button
+              fullWidth
+              variant="contained"
+              startIcon={ioBusy === 'exporting' ? undefined : <FileDownloadIcon />}
+              onClick={handleExport}
+              disabled={ioBusy !== null || !state.presentationId}
+              sx={{ height: 48 }}
+            >
+              {ioBusy === 'exporting' ? 'Exporting…' : 'Export Slideshow'}
+            </Button>
+            <Button
+              fullWidth
+              variant="outlined"
+              startIcon={ioBusy === 'importing' ? undefined : <FileUploadIcon />}
+              onClick={() => importInputRef.current?.click()}
+              disabled={ioBusy !== null}
+              sx={{ height: 48, borderColor: 'rgba(255,255,255,0.2)', color: 'rgba(255,255,255,0.7)' }}
+            >
+              {ioBusy === 'importing' ? 'Importing…' : 'Import Slideshow'}
+            </Button>
+            <input
+              ref={importInputRef}
+              type="file"
+              accept=".zip"
+              style={{ display: 'none' }}
+              onChange={handleImport}
+              aria-label="Import slideshow archive"
+            />
+          </Box>
+        </Box>
+
         <Box sx={{ mt: 'auto', display: 'flex', flexDirection: 'column', gap: 1.5 }}>
           <Button
             fullWidth
@@ -515,12 +597,12 @@ export function SettingsOverlay({ onEnterKiosk }: SettingsOverlayProps) {
       </Drawer>
 
       <Snackbar
-        open={!!uploadError}
+        open={!!uiError}
         autoHideDuration={4000}
-        onClose={() => setUploadError(null)}
+        onClose={() => setUiError(null)}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
       >
-        <Alert severity="error" onClose={() => setUploadError(null)}>{uploadError}</Alert>
+        <Alert severity="error" onClose={() => setUiError(null)}>{uiError}</Alert>
       </Snackbar>
     </>
   );
