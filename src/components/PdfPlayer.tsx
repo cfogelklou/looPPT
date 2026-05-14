@@ -5,6 +5,8 @@ import { usePlayback } from '../store/PlaybackContext';
 import { db } from '../store/db';
 import { PlayerShell } from './PlayerShell';
 import { useDiagnostics } from '../store/DiagnosticContext';
+import { TransitionLayer } from './TransitionLayer';
+import { TransitionErrorBoundary } from './TransitionErrorBoundary';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
   'pdfjs-dist/build/pdf.worker.min.mjs',
@@ -152,22 +154,26 @@ export function PdfPlayer() {
     }
   }, [pdfDoc, visibleIndices, dimensions, logError]);
 
+  const current = pdfDoc ? state.currentSlide % pdfDoc.numPages : 0;
+
   return (
     <PlayerShell isLoading={isLoading} error={error}>
       <div ref={containerRef} className="w-full h-full relative">
-        {pdfDoc && visibleIndices.map((idx) => (
-          <div
-            key={idx}
-            className="absolute inset-0 flex items-center justify-center transition-opacity duration-300"
-            style={{
-              opacity: idx === state.currentSlide % pdfDoc.numPages ? 1 : 0,
-              visibility: idx === state.currentSlide % pdfDoc.numPages ? 'visible' : 'hidden',
-              zIndex: idx === state.currentSlide % pdfDoc.numPages ? 1 : 0
-            }}
+        {pdfDoc && (
+          <TransitionErrorBoundary
+            currentSlideIndex={current}
+            logError={logError}
+            fallbackSlide={<canvas ref={(el) => { if (el) canvasRefs.current.set(current, el); }} />}
           >
-            <canvas ref={(el) => { if (el) canvasRefs.current.set(idx, el); }} />
-          </div>
-        ))}
+            <TransitionLayer currentSlideIndex={current}>
+              {visibleIndices.map((idx) => (
+                <div key={idx}>
+                  <canvas ref={(el) => { if (el) canvasRefs.current.set(idx, el); }} />
+                </div>
+              ))}
+            </TransitionLayer>
+          </TransitionErrorBoundary>
+        )}
         {!pdfDoc && !isLoading && <div className="absolute inset-0 flex items-center justify-center text-zinc-500">No document data available</div>}
       </div>
     </PlayerShell>

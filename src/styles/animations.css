@@ -1,0 +1,188 @@
+/* Overlay animation presets */
+
+/* Bounce: ball arcs across viewport like a real bounce, spinning, from left to right */
+@keyframes overlay-bounce {
+  0% {
+    transform: translate(-100%, 0%) rotate(0deg);
+  }
+  15% {
+    transform: translate(10vw, -30vh) rotate(120deg);
+  }
+  30% {
+    transform: translate(25vw, 0%) rotate(240deg);
+  }
+  45% {
+    transform: translate(40vw, -20vh) rotate(360deg);
+  }
+  60% {
+    transform: translate(55vw, 0%) rotate(480deg);
+  }
+  75% {
+    transform: translate(70vw, -12vh) rotate(600deg);
+  }
+  90% {
+    transform: translate(85vw, 0%) rotate(720deg);
+  }
+  100% {
+    transform: translate(110vw, -5vh) rotate(840deg);
+  }
+}
+
+/* Fly-across: straight traversal left to right */
+@keyframes overlay-fly-across {
+  0% {
+    transform: translate(-100%, 0) rotate(0deg);
+  }
+  100% {
+    transform: translate(calc(100vw + 100%), 0) rotate(360deg);
+  }
+}
+
+/* Pulse: in-place scale breathe */
+@keyframes overlay-pulse {
+  0%, 100% { transform: scale(1); opacity: var(--overlay-opacity, 1); }
+  50% { transform: scale(1.2); opacity: calc(var(--overlay-opacity, 1) * 0.6); }
+}
+
+.animate-overlay-bounce {
+  position: absolute;
+  bottom: 10%;
+  left: 0;
+  animation: overlay-bounce var(--overlay-duration, 4s) ease-in infinite;
+  will-change: transform;
+}
+
+.animate-overlay-fly-across {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  animation: overlay-fly-across var(--overlay-duration, 6s) linear infinite;
+  will-change: transform;
+}
+
+.animate-overlay-pulse {
+  animation: overlay-pulse var(--overlay-duration, 2s) ease-in-out infinite;
+  will-change: transform, opacity;
+}
+
+/* Slide transition base */
+.slide-transition-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.slide-base {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.slide-base.slide-hidden {
+  opacity: 0;
+  z-index: 0;
+}
+
+.slide-base.slide-current {
+  z-index: 3;
+  will-change: transform, opacity;
+}
+
+.slide-base.slide-leaving {
+  z-index: 2;
+  will-change: transform, opacity;
+}
+
+/* transition-none: fixed 300ms opacity fade (backward compat) */
+.transition-none .slide-base {
+  transition-property: opacity;
+  transition-timing-function: ease;
+}
+.transition-none .slide-base.slide-hidden {
+  opacity: 0;
+  transition-duration: 300ms;
+}
+.transition-none .slide-base.slide-current {
+  opacity: 1;
+  transition-duration: 300ms;
+}
+.transition-none .slide-base.slide-leaving {
+  opacity: 0;
+  transition-duration: 300ms;
+}
+
+/* transition-crossfade: opacity blend with configurable duration */
+.transition-crossfade .slide-base {
+  transition-property: opacity;
+  transition-timing-function: ease;
+  transition-duration: var(--transition-duration, 500ms);
+}
+.transition-crossfade .slide-base.slide-hidden {
+  opacity: 0;
+}
+.transition-crossfade .slide-base.slide-current {
+  opacity: 1;
+}
+.transition-crossfade .slide-base.slide-leaving {
+  opacity: 0;
+}
+
+/* transition-slide: horizontal push */
+.transition-slide .slide-base {
+  transition-property: transform;
+  transition-timing-function: ease;
+  transition-duration: var(--transition-duration, 500ms);
+}
+.transition-slide .slide-base.slide-hidden {
+  opacity: 1;
+  transform: translateX(100%);
+}
+.transition-slide .slide-base.slide-current {
+  opacity: 1;
+  transform: translateX(0);
+}
+.transition-slide .slide-base.slide-leaving {
+  opacity: 1;
+  transform: translateX(-100%);
+}
+
+/* transition-wipe: incoming slides over outgoing */
+.transition-wipe .slide-base {
+  transition-property: transform;
+  transition-timing-function: ease;
+  transition-duration: var(--transition-duration, 500ms);
+}
+.transition-wipe .slide-base.slide-hidden {
+  opacity: 1;
+  transform: translateX(100%);
+}
+.transition-wipe .slide-base.slide-current {
+  opacity: 1;
+  transform: translateX(0);
+}
+.transition-wipe .slide-base.slide-leaving {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+/* transition-dissolve: opacity + scale */
+.transition-dissolve .slide-base {
+  transition-property: transform, opacity;
+  transition-timing-function: ease;
+  transition-duration: var(--transition-duration, 500ms);
+}
+.transition-dissolve .slide-base.slide-hidden {
+  opacity: 0;
+  transform: scale(0.95);
+}
+.transition-dissolve .slide-base.slide-current {
+  opacity: 1;
+  transform: scale(1);
+}
+.transition-dissolve .slide-base.slide-leaving {
+  opacity: 0;
+  transform: scale(0.95);
+}

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { ensureSettings, type Settings } from './store/db';
 import { PlaybackProvider, usePlayback } from './store/PlaybackContext';
 import { DiagnosticProvider } from './store/DiagnosticContext';
+import { AnimationProvider } from './store/AnimationContext';
 import { Player } from './components/Player';
 import { Uploader } from './components/Uploader';
 import { Layout } from 'lucide-react';
@@ -66,7 +67,9 @@ export default function App() {
   return (
     <DiagnosticProvider>
       <PlaybackProvider initialSettings={initialSettings}>
-        <AppContent />
+        <AnimationProvider initialSettings={initialSettings}>
+          <AppContent />
+        </AnimationProvider>
       </PlaybackProvider>
     </DiagnosticProvider>
   );

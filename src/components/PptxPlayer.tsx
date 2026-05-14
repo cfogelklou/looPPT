@@ -4,6 +4,8 @@ import { db } from '../store/db';
 import { parsePPTX, SlideView, type PPTXData } from '@kandiforge/pptx-renderer';
 import { PlayerShell } from './PlayerShell';
 import { useDiagnostics } from '../store/DiagnosticContext';
+import { TransitionLayer } from './TransitionLayer';
+import { TransitionErrorBoundary } from './TransitionErrorBoundary';
 
 const PPTX_WARNING = 'PPTX rendering is experimental. For best results, export as PDF and re-upload.';
 
@@ -68,29 +70,42 @@ export function PptxPlayer() {
     logError(msg);
   }, [logError]);
 
+  const current = data ? state.currentSlide % data.slides.length : 0;
+
   return (
     <PlayerShell isLoading={isLoading} error={error} warning={PPTX_WARNING}>
       <div className="w-full h-full relative">
-        {data && visibleIndices.map((idx) => (
-          <div
-            key={idx}
-            className="absolute inset-0 flex items-center justify-center transition-opacity duration-300"
-            style={{
-              opacity: idx === state.currentSlide % data.slides.length ? 1 : 0,
-              visibility: idx === state.currentSlide % data.slides.length ? 'visible' : 'hidden',
-              zIndex: idx === state.currentSlide % data.slides.length ? 1 : 0
-            }}
+        {data && (
+          <TransitionErrorBoundary
+            currentSlideIndex={current}
+            logError={logError}
+            fallbackSlide={
+              <SlideView
+                slide={data.slides[current]}
+                slideWidth={data.size.width}
+                slideHeight={data.size.height}
+                width={dimensions.width}
+                height={dimensions.height}
+                onRenderError={(err: Error) => handleRenderError(current, err)}
+              />
+            }
           >
-            <SlideView
-              slide={data.slides[idx]}
-              slideWidth={data.size.width}
-              slideHeight={data.size.height}
-              width={dimensions.width}
-              height={dimensions.height}
-              onRenderError={(err: Error) => handleRenderError(idx, err)}
-            />
-          </div>
-        ))}
+            <TransitionLayer currentSlideIndex={current}>
+              {visibleIndices.map((idx) => (
+                <div key={idx}>
+                  <SlideView
+                    slide={data.slides[idx]}
+                    slideWidth={data.size.width}
+                    slideHeight={data.size.height}
+                    width={dimensions.width}
+                    height={dimensions.height}
+                    onRenderError={(err: Error) => handleRenderError(idx, err)}
+                  />
+                </div>
+              ))}
+            </TransitionLayer>
+          </TransitionErrorBoundary>
+        )}
         {!data && !isLoading && <div className="absolute inset-0 flex items-center justify-center text-zinc-500">No slide data available</div>}
       </div>
     </PlayerShell>

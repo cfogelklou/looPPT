@@ -1,0 +1,20 @@
+Implement the animation system for LooPPT described in plan-for-animations.md.
+
+Before planning, read plan-for-animations.md from the project root and use it as source material, constraints, and design intent.
+
+Important planning instructions:
+- Do not copy the plan's implementation steps verbatim into the PRD.
+- Create your own milestone decomposition for this existing codebase.
+- Treat the plan as input, not as a fixed milestone list.
+- Keep milestones small, testable, and vertically sliced.
+- Milestone 1 should deliver a minimal but working user-visible slice of the animation system.
+
+Implementation constraints:
+- Preserve existing kiosk/reliability behavior unless intentionally changing it.
+- Respect 24/7 kiosk performance constraints.
+- Prefer CSS-driven animations/transitions over JS animation loops.
+- Keep overlay animations and slide transitions as independent systems.
+- Support global defaults and per-presentation overrides if feasible within the milestone plan.
+- Run relevant tests/build/lint during milestone execution.
+
+When writing the PRD and milestones, ground them in the current repository structure and current architecture rather than assuming greenfield files or components.
