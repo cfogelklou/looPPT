@@ -15,12 +15,16 @@ export function PptxPlayer() {
   const [data, setData] = useState<PPTXData | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [dimensions, setDimensions] = useState({ width: window.innerWidth, height: window.innerHeight });
+  const [dimensions, setDimensions] = useState({ width: document.documentElement.clientWidth, height: document.documentElement.clientHeight });
 
   useEffect(() => {
-    const handleResize = () => setDimensions({ width: window.innerWidth, height: window.innerHeight });
+    const handleResize = () => setDimensions({ width: document.documentElement.clientWidth, height: document.documentElement.clientHeight });
     window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    document.addEventListener('fullscreenchange', handleResize);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      document.removeEventListener('fullscreenchange', handleResize);
+    };
   }, []);
 
   useEffect(() => {

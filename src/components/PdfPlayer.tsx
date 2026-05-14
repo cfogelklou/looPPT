@@ -19,7 +19,7 @@ export function PdfPlayer() {
   const [pdfDoc, setPdfDoc] = useState<PDFDocumentProxy | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [dimensions, setDimensions] = useState({ width: window.innerWidth, height: window.innerHeight });
+  const [dimensions, setDimensions] = useState({ width: document.documentElement.clientWidth, height: document.documentElement.clientHeight });
 
   const canvasRefs = useRef<Map<number, HTMLCanvasElement>>(new Map());
   const renderTasks = useRef<Map<number, { task: RenderTask; page: PDFPageProxy }>>(new Map());
@@ -69,12 +69,14 @@ export function PdfPlayer() {
     const handleResize = () => {
       if (resizeTimer.current) clearTimeout(resizeTimer.current);
       resizeTimer.current = window.setTimeout(() => {
-        setDimensions({ width: window.innerWidth, height: window.innerHeight });
+        setDimensions({ width: document.documentElement.clientWidth, height: document.documentElement.clientHeight });
       }, 200);
     };
     window.addEventListener('resize', handleResize);
+    document.addEventListener('fullscreenchange', handleResize);
     return () => {
       window.removeEventListener('resize', handleResize);
+      document.removeEventListener('fullscreenchange', handleResize);
       if (resizeTimer.current) clearTimeout(resizeTimer.current);
     };
   }, []);
@@ -134,7 +136,9 @@ export function PdfPlayer() {
         canvas.style.width = `${Math.floor(viewport.width)}px`;
         canvas.style.height = `${Math.floor(viewport.height)}px`;
 
-        const task = page.render({ canvas, viewport });
+        const renderViewport = page.getViewport({ scale: scale * dpr });
+
+        const task = page.render({ canvas, viewport: renderViewport });
         if (!task) return;
         renderTasks.current.set(idx, { task, page });
 
