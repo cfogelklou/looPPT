@@ -3,6 +3,8 @@ import { db, type Settings, type PresentationSourceType } from './db';
 
 const MAX_ZIP_SIZE = 500 * 1024 * 1024; // 500MB
 const MAX_ZIP_FILES = 100;
+const MAX_INFLATED_SIZE = 500 * 1024 * 1024; // 500MB
+const VALID_SOURCE_TYPES: PresentationSourceType[] = ['pdf', 'pptx'];
 
 export class SlideshowIOError extends Error {
   constructor(message: string) {
@@ -65,6 +67,11 @@ export async function exportSlideshow(): Promise<void> {
   }
 
   const overlays = await db.overlays.toArray();
+
+  // Ensure export won't exceed import file limit (manifest + presentation + overlays)
+  if (overlays.length + 2 > MAX_ZIP_FILES) {
+    throw new SlideshowIOError('Too many overlays to export.');
+  }
 
   const { id: _id, presentationId: _pid, ...settingsFields } = settings;
 
@@ -148,10 +155,28 @@ export async function importSlideshow(zipBlob: Blob): Promise<number> {
   if (
     !manifest.presentation?.name ||
     !manifest.presentation?.sourceType ||
+    !VALID_SOURCE_TYPES.includes(manifest.presentation.sourceType) ||
     !manifest.settings
   ) {
     throw new SlideshowIOError('Invalid slideshow file: incomplete manifest.');
   }
+
+  // Sanitize settings with defaults for missing/invalid fields
+  const settings = manifest.settings;
+  manifest.settings = {
+    currentSlide: typeof settings.currentSlide === 'number' ? settings.currentSlide : 0,
+    interval: typeof settings.interval === 'number' ? Math.max(1, Math.min(60, settings.interval)) : 5,
+    fitMode: settings.fitMode === 'contain' || settings.fitMode === 'cover' ? settings.fitMode : 'contain',
+    overlayEnabled: !!settings.overlayEnabled,
+    overlayPreset: typeof settings.overlayPreset === 'string' ? settings.overlayPreset : 'none',
+    overlaySize: typeof settings.overlaySize === 'number' ? Math.max(32, Math.min(256, settings.overlaySize)) : 100,
+    overlayOpacity: typeof settings.overlayOpacity === 'number' ? Math.max(0.1, Math.min(1, settings.overlayOpacity)) : 1,
+    overlaySpeed: typeof settings.overlaySpeed === 'number' ? Math.max(0.5, Math.min(3, settings.overlaySpeed)) : 1,
+    overlayFrequency: typeof settings.overlayFrequency === 'number' ? Math.max(0.5, Math.min(60, settings.overlayFrequency)) : 5,
+    transitionType: typeof settings.transitionType === 'string' ? settings.transitionType : 'none',
+    transitionDuration: typeof settings.transitionDuration === 'number' && settings.transitionDuration > 0 ? settings.transitionDuration : 500,
+    embedUrl: typeof settings.embedUrl === 'string' ? settings.embedUrl : '',
+  };
 
   // Read presentation file
   const presExt = manifest.presentation.sourceType;
@@ -161,40 +186,46 @@ export async function importSlideshow(zipBlob: Blob): Promise<number> {
   }
 
   const presData = await presFile.async('arraybuffer');
+  if (presData.byteLength > MAX_INFLATED_SIZE) {
+    throw new SlideshowIOError('File too large.');
+  }
   const mimeType =
     presExt === 'pdf'
       ? 'application/pdf'
       : 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
   const presBlob = new Blob([presData], { type: mimeType });
 
-  // Atomic import via Dexie transaction
+  // Pre-read overlay blobs outside the transaction to avoid holding it open
+  const overlayBlobs = new Map<number, { blob: Blob; name: string; mimeType: string }>();
+  if (manifest.overlays) {
+    for (const entry of manifest.overlays) {
+      const overlayFile = zip.file(entry.filename);
+      if (!overlayFile) continue;
+      const overlayData = await overlayFile.async('arraybuffer');
+      if (overlayData.byteLength > MAX_INFLATED_SIZE) continue;
+      overlayBlobs.set(entry.originalId, {
+        blob: new Blob([overlayData], { type: entry.mimeType }),
+        name: entry.name,
+        mimeType: entry.mimeType,
+      });
+    }
+  }
+
+  // Atomic import via Dexie transaction — DB writes only
   return db.transaction(
     'rw',
     [db.presentations, db.settings, db.overlays],
     async () => {
-      // Insert overlays and build ID remap
       const idMap = new Map<number, number>();
-      const skippedIds = new Set<number>();
 
-      if (manifest.overlays) {
-        for (const entry of manifest.overlays) {
-          const overlayFile = zip.file(entry.filename);
-          if (!overlayFile) {
-            skippedIds.add(entry.originalId);
-            continue;
-          }
-          const overlayData = await overlayFile.async('arraybuffer');
-          const overlayBlob = new Blob([overlayData], {
-            type: entry.mimeType,
-          });
-          const newId = await db.overlays.add({
-            name: entry.name,
-            blob: overlayBlob,
-            mimeType: entry.mimeType,
-            createdAt: Date.now(),
-          });
-          idMap.set(entry.originalId, newId as number);
-        }
+      for (const [originalId, { blob, name, mimeType }] of overlayBlobs) {
+        const newId = await db.overlays.add({
+          name,
+          blob,
+          mimeType,
+          createdAt: Date.now(),
+        });
+        idMap.set(originalId, newId as number);
       }
 
       // Insert presentation

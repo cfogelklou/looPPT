@@ -146,7 +146,7 @@ export function SettingsOverlay({ onEnterKiosk, alwaysShowGear }: SettingsOverla
   const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (!file.name.endsWith('.zip')) {
+    if (!file.name.toLowerCase().endsWith('.zip')) {
       setUiError('Please select a .zip file.');
       e.target.value = '';
       return;
