@@ -43,7 +43,7 @@ vi.mock('../store/db', async () => {
       overlayFrequency: 5,
       transitionType: 'none',
       transitionDuration: 500,
-      embedUrl: '',
+    embedUrl: '',
     },
     ensureSettings: vi.fn().mockResolvedValue({
       id: 'current',
@@ -58,7 +58,7 @@ vi.mock('../store/db', async () => {
       overlayFrequency: 5,
       transitionType: 'none',
       transitionDuration: 500,
-      embedUrl: '',
+    embedUrl: '',
     }),
   };
 });
@@ -99,7 +99,7 @@ const defaultSettings: Settings = {
   overlayFrequency: 5,
   transitionType: 'none',
   transitionDuration: 500,
-      embedUrl: '',
+    embedUrl: '',
 };
 
 function createWrapper(settings: Settings = defaultSettings) {
@@ -628,7 +628,7 @@ describe('Milestone 3: Settings UI & Uploads', () => {
       overlayOpacity: 1.0,
       transitionType: 'none',
       transitionDuration: 500,
-      embedUrl: '',
+    embedUrl: '',
     };
 
     const mockCollection = {

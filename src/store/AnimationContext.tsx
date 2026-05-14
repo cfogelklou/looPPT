@@ -92,8 +92,11 @@ function animationReducer(state: AnimationState, action: AnimationAction): Anima
       return { ...state, transitionType: action.transitionType };
     case 'SET_TRANSITION_DURATION':
       return { ...state, transitionDuration: action.transitionDuration };
-    case 'SET_EMBED_URL':
-      return { ...state, embedUrl: action.url };
+    case 'SET_EMBED_URL': {
+      const trimmed = action.url.trim();
+      const safe = trimmed === '' || trimmed.startsWith('https://') ? trimmed : '';
+      return { ...state, embedUrl: safe };
+    }
     default:
       return state;
   }

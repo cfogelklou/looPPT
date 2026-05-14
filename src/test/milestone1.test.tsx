@@ -46,7 +46,7 @@ vi.mock('../store/db', async () => {
       overlayFrequency: 5,
       transitionType: 'none',
       transitionDuration: 500,
-      embedUrl: '',
+    embedUrl: '',
     },
     ensureSettings: vi.fn().mockResolvedValue({
       id: 'current',
@@ -61,7 +61,7 @@ vi.mock('../store/db', async () => {
       overlayFrequency: 5,
       transitionType: 'none',
       transitionDuration: 500,
-      embedUrl: '',
+    embedUrl: '',
     }),
   };
 });
@@ -101,7 +101,7 @@ const defaultSettings: Settings = {
       overlayFrequency: 5,
   transitionType: 'none',
   transitionDuration: 500,
-      embedUrl: '',
+    embedUrl: '',
 };
 
 function createWrapper(settings: Settings = defaultSettings) {
@@ -331,6 +331,20 @@ describe('Milestone 1: Overlays MVP', () => {
     expect(warnSpy).toHaveBeenCalledWith('Invalid overlayPreset "invalid-value", defaulting to "none"');
 
     warnSpy.mockRestore();
+  });
+
+  it('sanitizeAnimationSettings handles embedUrl', () => {
+    const empty = sanitizeAnimationSettings({ ...defaultSettings, embedUrl: '' });
+    expect(empty.embedUrl).toBe('');
+
+    const valid = sanitizeAnimationSettings({ ...defaultSettings, embedUrl: 'https://example.com' });
+    expect(valid.embedUrl).toBe('https://example.com');
+
+    const trimmed = sanitizeAnimationSettings({ ...defaultSettings, embedUrl: '  https://example.com  ' });
+    expect(trimmed.embedUrl).toBe('https://example.com');
+
+    const invalid = sanitizeAnimationSettings({ ...defaultSettings, embedUrl: 'http://example.com' });
+    expect(invalid.embedUrl).toBe('');
   });
 
   // Satisfies T10: Settings UI Toggle

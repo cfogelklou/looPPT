@@ -113,14 +113,16 @@ export function PptxPlayer() {
             fallbackSlide={
               current >= docSlides && embedActive
                 ? <EmbedSlide url={animState.embedUrl} active />
-                : <SlideView
-                    slide={data.slides[Math.min(current, docSlides - 1)]}
-                    slideWidth={data.size.width}
-                    slideHeight={data.size.height}
-                    width={dimensions.width}
-                    height={dimensions.height}
-                    onRenderError={(err: Error) => handleRenderError(current, err)}
-                  />
+                : docSlides > 0
+                  ? <SlideView
+                      slide={data.slides[Math.min(current, docSlides - 1)]}
+                      slideWidth={data.size.width}
+                      slideHeight={data.size.height}
+                      width={dimensions.width}
+                      height={dimensions.height}
+                      onRenderError={(err: Error) => handleRenderError(current, err)}
+                    />
+                  : <div>No slide data</div>
             }
           >
             <TransitionLayer currentSlideIndex={current}>

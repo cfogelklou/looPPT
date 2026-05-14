@@ -29,6 +29,7 @@ export function EmbedSlide({ url, active }: EmbedSlideProps) {
     <iframe
       src={active ? embedUrl : ''}
       className="border-0"
+      sandbox="allow-scripts allow-same-origin allow-presentation allow-popups"
       allow="autoplay; fullscreen"
       title="Embedded content"
       style={{

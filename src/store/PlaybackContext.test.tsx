@@ -84,4 +84,21 @@ describe('PlaybackCoordinator', () => {
     });
     expect(result.current.state.currentSlide).toBe(2);
   });
+
+  it('clamps currentSlide when totalSlides decreases', () => {
+    const { result } = renderHook(() => usePlayback(), { wrapper });
+
+    act(() => {
+      result.current.dispatch({ type: 'SET_TOTAL_SLIDES', totalSlides: 5 });
+      result.current.dispatch({ type: 'GOTO_SLIDE', index: 4 });
+    });
+
+    expect(result.current.state.currentSlide).toBe(4);
+
+    act(() => {
+      result.current.dispatch({ type: 'SET_TOTAL_SLIDES', totalSlides: 3 });
+    });
+
+    expect(result.current.state.currentSlide).toBe(2);
+  });
 });
