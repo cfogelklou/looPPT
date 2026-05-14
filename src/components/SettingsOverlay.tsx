@@ -267,7 +267,7 @@ export function SettingsOverlay({ onEnterKiosk }: SettingsOverlayProps) {
             }}
           />
           <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.5)', mt: 1, display: 'block' }}>
-            HTTPS only. For YouTube use youtube.com/embed/VIDEO_ID?autoplay=1&mute=1
+            HTTPS only. YouTube links auto-convert to embed format with autoplay.
           </Typography>
           {animState.embedUrl && (
             <Button
