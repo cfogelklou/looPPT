@@ -79,18 +79,16 @@ export function PptxPlayer() {
           <TransitionErrorBoundary
             currentSlideIndex={current}
             logError={logError}
-            slides={visibleIndices.map((idx) => (
-              <div key={idx}>
-                <SlideView
-                  slide={data.slides[idx]}
-                  slideWidth={data.size.width}
-                  slideHeight={data.size.height}
-                  width={dimensions.width}
-                  height={dimensions.height}
-                  onRenderError={(err: Error) => handleRenderError(idx, err)}
-                />
-              </div>
-            ))}
+            fallbackSlide={
+              <SlideView
+                slide={data.slides[current]}
+                slideWidth={data.size.width}
+                slideHeight={data.size.height}
+                width={dimensions.width}
+                height={dimensions.height}
+                onRenderError={(err: Error) => handleRenderError(current, err)}
+              />
+            }
           >
             <TransitionLayer currentSlideIndex={current}>
               {visibleIndices.map((idx) => (

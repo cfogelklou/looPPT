@@ -34,9 +34,12 @@ function CustomOverlayRenderer({ motionPreset, size, opacity, speed }: {
     const id = parseInt(motionPreset.replace('custom:', ''), 10);
     let revoked = false;
     db.overlays.get(id).then((overlay) => {
-      if (overlay && !revoked) {
+      if (revoked) return;
+      if (overlay) {
         const url = URL.createObjectURL(overlay.blob);
         setObjectUrl(url);
+      } else {
+        setObjectUrl(null);
       }
     }).catch(console.error);
     return () => {

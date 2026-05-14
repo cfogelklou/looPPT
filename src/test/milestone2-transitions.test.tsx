@@ -455,7 +455,7 @@ describe('Milestone 2: Slide Transitions', () => {
     }
 
     const { container } = render(
-      <TransitionErrorBoundary currentSlideIndex={0} logError={logError} slides={[<div key={0}>Slide 0</div>]}>
+      <TransitionErrorBoundary currentSlideIndex={0} logError={logError} fallbackSlide={<div>Slide 0</div>}>
         <ThrowingChild />
       </TransitionErrorBoundary>
     );

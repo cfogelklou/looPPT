@@ -4,7 +4,7 @@ interface Props {
   currentSlideIndex: number;
   children: ReactNode;
   logError: (message: string) => void;
-  slides: ReactNode[];
+  fallbackSlide: ReactNode;
 }
 
 interface State {
@@ -29,9 +29,7 @@ export class TransitionErrorBoundary extends React.Component<Props, State> {
       return (
         <div className="w-full h-full relative">
           <div style={{ position: 'absolute', inset: 0, zIndex: 1, opacity: 1, visibility: 'visible' as const }}>
-            {this.props.slides[this.props.currentSlideIndex] ?? (
-              <div>Slide render error — transitions disabled</div>
-            )}
+            {this.props.fallbackSlide}
           </div>
           <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 2, background: 'rgba(0,0,0,0.7)', color: '#ffab40', fontSize: 12, padding: '4px 8px' }}>
             Transition error — showing slide without transitions

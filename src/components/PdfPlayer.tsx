@@ -163,11 +163,7 @@ export function PdfPlayer() {
           <TransitionErrorBoundary
             currentSlideIndex={current}
             logError={logError}
-            slides={visibleIndices.map((idx) => (
-              <div key={idx}>
-                <canvas ref={(el) => { if (el) canvasRefs.current.set(idx, el); }} />
-              </div>
-            ))}
+            fallbackSlide={<canvas ref={(el) => { if (el) canvasRefs.current.set(current, el); }} />}
           >
             <TransitionLayer currentSlideIndex={current}>
               {visibleIndices.map((idx) => (
