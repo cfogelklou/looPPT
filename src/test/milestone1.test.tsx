@@ -9,7 +9,7 @@ import { AnimationErrorBoundary } from '../components/AnimationErrorBoundary';
 import { SettingsOverlay } from '../components/SettingsOverlay';
 import { db, upgradeV3Settings, type Settings } from '../store/db';
 
-// @ts-expect-error Vite raw import for CSS content inspection
+// Vite raw import for CSS content inspection
 import animationsCss from '../styles/animations.css?raw';
 
 // Mock DB — keep real upgradeV3Settings for T7/T8

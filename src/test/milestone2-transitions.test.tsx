@@ -7,9 +7,9 @@ import { DiagnosticProvider } from '../store/DiagnosticContext';
 import { TransitionLayer } from '../components/TransitionLayer';
 import { TransitionErrorBoundary } from '../components/TransitionErrorBoundary';
 import { SettingsOverlay } from '../components/SettingsOverlay';
-import { db, upgradeV4Settings, type Settings, type TransitionType } from '../store/db';
+import { db, INITIAL_SETTINGS, upgradeV4Settings, type Settings, type TransitionType } from '../store/db';
 
-// @ts-expect-error Vite raw import for CSS content inspection
+// Vite raw import for CSS content inspection
 import animationsCss from '../styles/animations.css?raw';
 
 // Mock DB
@@ -447,8 +447,8 @@ describe('Milestone 2: Slide Transitions', () => {
     const logError = vi.fn();
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
-    // eslint-disable-next-line react/require-render-return
     class ThrowingChild extends React.Component {
+      // eslint-disable-next-line react/require-render-return
       render(): React.ReactNode {
         throw new Error('Test transition error');
       }
