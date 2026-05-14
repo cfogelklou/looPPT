@@ -67,6 +67,10 @@ bun run test:run       # Run all tests
 - **HTTPS required**: Wake Lock, Fullscreen API, SW all need secure context
 - No CI/CD configured yet — manual build + deploy
 
+## Pre-existing errors
+
+- There is no such thing as "pre-existing" errors. Merges are never allowed with errors in CI, so errors in any branch MUST be considered "yours to fix." Take ownership!
+
 ## Tips
 
 - **Gemini CLI for visual analysis**: Use `gemini` CLI to compare screenshots when debugging rendering issues. Example: `gemini "Compare these two screenshots and list all visual differences" --yolo`
