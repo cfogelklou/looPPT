@@ -198,7 +198,7 @@ export function SettingsOverlay({ onEnterKiosk }: SettingsOverlayProps) {
               Enter Kiosk Mode
             </Button>
             <Typography variant="caption" sx={{ display: 'block', mt: 1, color: 'rgba(255,255,255,0.5)', lineHeight: 1.3 }}>
-              Hides all controls. Exit via Escape key or 5 taps in top-right corner.
+              Hides all controls. Exit via Escape key or 3 taps in top-right corner.
             </Typography>
           </Box>
         )}

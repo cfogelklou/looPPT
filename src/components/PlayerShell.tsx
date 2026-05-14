@@ -143,13 +143,12 @@ function KioskExitZone({ onExit }: { onExit: () => void }) {
     taps.current = taps.current.filter(t => now - t < 3000);
     taps.current.push(now);
 
-    if (taps.current.length >= 5) {
+    if (taps.current.length >= 3) {
       taps.current = [];
       setHintVisible(false);
       onExit();
-    } else if (taps.current.length >= 3) {
+    } else if (taps.current.length >= 2) {
       setHintVisible(true);
-      // Auto-hide hint after 2s
       setTimeout(() => setHintVisible(false), 2000);
     }
   }, [onExit]);
@@ -160,8 +159,8 @@ function KioskExitZone({ onExit }: { onExit: () => void }) {
         position: 'absolute',
         top: 0,
         right: 0,
-        width: 64,
-        height: 64,
+        width: 80,
+        height: 80,
         zIndex: 60,
         touchAction: 'manipulation',
       }}
@@ -181,7 +180,7 @@ function KioskExitZone({ onExit }: { onExit: () => void }) {
             pointerEvents: 'none',
           }}
         >
-          Tap {5 - taps.current.length} more times to exit
+          Tap {3 - taps.current.length} more times to exit
         </div>
       )}
     </div>
