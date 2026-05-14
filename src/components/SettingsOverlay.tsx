@@ -16,7 +16,7 @@ import {
   Alert,
   Snackbar,
 } from '@mui/material';
-import { Settings as SettingsIcon, Close as CloseIcon, Info as InfoIcon, Upload as UploadIcon, Delete as DeleteIcon } from '@mui/icons-material';
+import { Settings as SettingsIcon, Close as CloseIcon, Info as InfoIcon, Upload as UploadIcon, Delete as DeleteIcon, Monitor as MonitorIcon } from '@mui/icons-material';
 import { usePlayback } from '../store/PlaybackContext';
 import { useAnimation } from '../store/AnimationContext';
 import { db, type OverlayPreset, type TransitionType, type CustomOverlay } from '../store/db';
@@ -24,7 +24,11 @@ import { PRESET_META } from './overlays';
 
 const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
 
-export function SettingsOverlay() {
+interface SettingsOverlayProps {
+  onEnterKiosk?: () => void;
+}
+
+export function SettingsOverlay({ onEnterKiosk }: SettingsOverlayProps) {
   const [open, setOpen] = useState(false);
   const { state, dispatch, clearPresentation } = usePlayback();
   const { state: animState, dispatch: animDispatch } = useAnimation();
@@ -120,7 +124,7 @@ export function SettingsOverlay() {
 
   return (
     <>
-      <div className="fixed top-4 right-4 z-50">
+      <div className="fixed top-4 right-4 z-50 opacity-0 group-hover:opacity-100 transition-opacity">
         <IconButton
           onClick={() => setOpen(true)}
           sx={{
@@ -179,6 +183,25 @@ export function SettingsOverlay() {
             sx={{ '.MuiTypography-root': { fontSize: '1.1rem' } }}
           />
         </Box>
+
+        {onEnterKiosk && (
+          <Box sx={{ mb: 4 }}>
+            <Button
+              fullWidth
+              variant="contained"
+              color="primary"
+              size="large"
+              onClick={() => { setOpen(false); onEnterKiosk(); }}
+              startIcon={<MonitorIcon />}
+              sx={{ height: 56 }}
+            >
+              Enter Kiosk Mode
+            </Button>
+            <Typography variant="caption" sx={{ display: 'block', mt: 1, color: 'rgba(255,255,255,0.5)', lineHeight: 1.3 }}>
+              Hides all controls. Exit via Escape key or 5 taps in top-right corner.
+            </Typography>
+          </Box>
+        )}
 
         <Divider sx={{ my: 3, borderColor: 'rgba(255,255,255,0.1)' }} />
 
