@@ -57,6 +57,7 @@ export function WakeLockFallback({ active }: WakeLockFallbackProps) {
       playsInline
       loop
       disablePictureInPicture
+      aria-hidden="true"
       style={{
         position: 'fixed',
         top: 0,

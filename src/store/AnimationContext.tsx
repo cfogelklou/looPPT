@@ -73,7 +73,7 @@ export function sanitizeAnimationSettings(settings: Settings): AnimationState {
     transitionType,
     transitionDuration,
     embedUrl,
-    wakeLockFallback: settings.wakeLockFallback ?? false,
+    wakeLockFallback: settings.wakeLockFallback === true,
   };
 }
 

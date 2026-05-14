@@ -176,7 +176,7 @@ export async function importSlideshow(zipBlob: Blob): Promise<number> {
     transitionType: typeof settings.transitionType === 'string' ? settings.transitionType : 'none',
     transitionDuration: typeof settings.transitionDuration === 'number' && settings.transitionDuration > 0 ? settings.transitionDuration : 500,
     embedUrl: typeof settings.embedUrl === 'string' ? settings.embedUrl : '',
-    wakeLockFallback: !!settings.wakeLockFallback,
+    wakeLockFallback: settings.wakeLockFallback === true,
   };
 
   // Read presentation file

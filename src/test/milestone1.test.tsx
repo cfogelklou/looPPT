@@ -7,6 +7,7 @@ import { DiagnosticProvider } from '../store/DiagnosticContext';
 import { AnimationOverlay } from '../components/AnimationOverlay';
 import { AnimationErrorBoundary } from '../components/AnimationErrorBoundary';
 import { SettingsOverlay } from '../components/SettingsOverlay';
+import { WakeLockFallback } from '../components/WakeLockFallback';
 import { db, upgradeV3Settings, upgradeV8Settings, type Settings } from '../store/db';
 
 // Vite raw import for CSS content inspection
@@ -523,5 +524,67 @@ describe('Milestone 1: Overlays MVP', () => {
     );
 
     expect(container.textContent).toBe('Recovered');
+  });
+
+  // WakeLockFallback component tests
+  it('WakeLockFallback renders hidden video with aria-hidden', () => {
+    const { container } = render(
+      <DiagnosticProvider>
+        <PlaybackProvider initialSettings={defaultSettings}>
+          <AnimationProvider initialSettings={defaultSettings}>
+            <WakeLockFallback active={false} />
+          </AnimationProvider>
+        </PlaybackProvider>
+      </DiagnosticProvider>
+    );
+
+    const video = container.querySelector('video');
+    expect(video).not.toBeNull();
+    expect(video?.getAttribute('aria-hidden')).toBe('true');
+    expect(video?.muted).toBe(true);
+    expect(video?.loop).toBe(true);
+    expect(video?.style.opacity).toBe('0');
+  });
+
+  // WakeLockFallback sanitization: non-boolean values default to false
+  it('sanitizeAnimationSettings treats non-boolean wakeLockFallback as false', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    const stringFalse = sanitizeAnimationSettings({ ...defaultSettings, wakeLockFallback: 'false' as unknown as boolean });
+    expect(stringFalse.wakeLockFallback).toBe(false);
+
+    const truthyOne = sanitizeAnimationSettings({ ...defaultSettings, wakeLockFallback: 1 as unknown as boolean });
+    expect(truthyOne.wakeLockFallback).toBe(false);
+
+    warnSpy.mockRestore();
+  });
+
+  // Settings UI: Keep Screen Awake toggle
+  it('toggling Keep Screen Awake dispatches SET_WAKE_LOCK_FALLBACK', async () => {
+    vi.useRealTimers();
+
+    render(
+      <DiagnosticProvider>
+        <PlaybackProvider initialSettings={defaultSettings}>
+          <AnimationProvider initialSettings={defaultSettings}>
+            <SettingsOverlay />
+          </AnimationProvider>
+        </PlaybackProvider>
+      </DiagnosticProvider>
+    );
+
+    const gearButton = screen.getByLabelText('Open Settings');
+    fireEvent.click(gearButton);
+
+    const toggle = screen.getByRole('checkbox', { name: /Keep Screen Awake/ });
+    expect(toggle).not.toBeChecked();
+
+    fireEvent.click(toggle);
+
+    await waitFor(() => {
+      expect(toggle).toBeChecked();
+    });
+
+    vi.useFakeTimers();
   });
 });
