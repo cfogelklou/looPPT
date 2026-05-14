@@ -15,6 +15,7 @@ import {
   FormControl,
   Alert,
   Snackbar,
+  TextField,
 } from '@mui/material';
 import { Settings as SettingsIcon, Close as CloseIcon, Info as InfoIcon, Upload as UploadIcon, Delete as DeleteIcon, Monitor as MonitorIcon } from '@mui/icons-material';
 import { usePlayback } from '../store/PlaybackContext';
@@ -240,6 +241,43 @@ export function SettingsOverlay({ onEnterKiosk }: SettingsOverlayProps) {
               aria-label="Transition Duration"
             />
           </Box>
+        </Box>
+
+        <Divider sx={{ my: 3, borderColor: 'rgba(255,255,255,0.1)' }} />
+
+        {/* Embed URL — Last Slide */}
+        <Box sx={{ mb: 4 }}>
+          <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
+            Embed URL (Last Slide)
+          </Typography>
+          <TextField
+            fullWidth
+            size="small"
+            type="url"
+            placeholder="https://..."
+            value={animState.embedUrl}
+            onChange={(e) => animDispatch({ type: 'SET_EMBED_URL', url: e.target.value })}
+            sx={{
+              mt: 1,
+              '& .MuiOutlinedInput-root': {
+                color: 'white',
+                '& fieldset': { borderColor: 'rgba(255,255,255,0.2)' },
+                '&:hover fieldset': { borderColor: 'rgba(255,255,255,0.4)' },
+              },
+            }}
+          />
+          <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.5)', mt: 1, display: 'block' }}>
+            HTTPS only. YouTube links auto-convert to embed format with autoplay.
+          </Typography>
+          {animState.embedUrl && (
+            <Button
+              size="small"
+              onClick={() => animDispatch({ type: 'SET_EMBED_URL', url: '' })}
+              sx={{ mt: 1, color: '#ef5350' }}
+            >
+              Clear URL
+            </Button>
+          )}
         </Box>
 
         <Divider sx={{ my: 3, borderColor: 'rgba(255,255,255,0.1)' }} />

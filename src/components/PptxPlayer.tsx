@@ -6,12 +6,15 @@ import { PlayerShell } from './PlayerShell';
 import { useDiagnostics } from '../store/DiagnosticContext';
 import { TransitionLayer } from './TransitionLayer';
 import { TransitionErrorBoundary } from './TransitionErrorBoundary';
+import { useAnimation } from '../store/AnimationContext';
+import { EmbedSlide } from './EmbedSlide';
 
 const PPTX_WARNING = 'PPTX rendering is experimental. For best results, export as PDF and re-upload.';
 
 export function PptxPlayer() {
   const { state, dispatch } = usePlayback();
   const { logError } = useDiagnostics();
+  const { state: animState } = useAnimation();
   const [data, setData] = useState<PPTXData | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -38,7 +41,6 @@ export function PptxPlayer() {
               const buffer = await pres.blob.arrayBuffer();
               const parsed = await parsePPTX(buffer);
               setData(parsed);
-              dispatch({ type: 'SET_TOTAL_SLIDES', totalSlides: parsed.slides.length });
             } catch (err: unknown) {
               const msg = `Failed to parse PPTX file: ${err instanceof Error ? err.message : String(err)}`;
               setError(msg);
@@ -57,24 +59,49 @@ export function PptxPlayer() {
     }
   }, [state.presentationId, dispatch, logError]);
 
-  const visibleIndices = useMemo(() => {
-    if (!data || data.slides.length === 0) return [];
-    if (data.slides.length === 1) return [0];
+  const docSlides = data ? data.slides.length : 0;
+  const embedActive = animState.embedUrl !== '';
 
-    const count = data.slides.length;
+  useEffect(() => {
+    if (data) {
+      dispatch({ type: 'SET_TOTAL_SLIDES', totalSlides: data.slides.length + (embedActive ? 1 : 0) });
+    }
+  }, [data, embedActive, dispatch]);
+
+  const visibleIndices = useMemo(() => {
+    if (!data || state.totalSlides === 0) return [];
+    if (state.totalSlides === 1) return [0];
+
+    const count = state.totalSlides;
     const current = state.currentSlide % count;
     const prev = (current - 1 + count) % count;
     const next = (current + 1) % count;
 
     return Array.from(new Set([prev, current, next]));
-  }, [data, state.currentSlide]);
+  }, [data, state.totalSlides, state.currentSlide]);
 
   const handleRenderError = useCallback((slideIndex: number, err: Error) => {
     const msg = `Slide ${slideIndex} render error: ${err.message}`;
     logError(msg);
   }, [logError]);
 
-  const current = data ? state.currentSlide % data.slides.length : 0;
+  const current = state.totalSlides > 0 ? state.currentSlide % state.totalSlides : 0;
+
+  const renderSlide = (idx: number) => {
+    if (idx >= docSlides && embedActive) {
+      return <EmbedSlide url={animState.embedUrl} active={idx === current} />;
+    }
+    return (
+      <SlideView
+        slide={data!.slides[idx]}
+        slideWidth={data!.size.width}
+        slideHeight={data!.size.height}
+        width={dimensions.width}
+        height={dimensions.height}
+        onRenderError={(err: Error) => handleRenderError(idx, err)}
+      />
+    );
+  };
 
   return (
     <PlayerShell isLoading={isLoading} error={error} warning={PPTX_WARNING}>
@@ -84,27 +111,24 @@ export function PptxPlayer() {
             currentSlideIndex={current}
             logError={logError}
             fallbackSlide={
-              <SlideView
-                slide={data.slides[current]}
-                slideWidth={data.size.width}
-                slideHeight={data.size.height}
-                width={dimensions.width}
-                height={dimensions.height}
-                onRenderError={(err: Error) => handleRenderError(current, err)}
-              />
+              current >= docSlides && embedActive
+                ? <EmbedSlide url={animState.embedUrl} active />
+                : docSlides > 0
+                  ? <SlideView
+                      slide={data.slides[Math.min(current, docSlides - 1)]}
+                      slideWidth={data.size.width}
+                      slideHeight={data.size.height}
+                      width={dimensions.width}
+                      height={dimensions.height}
+                      onRenderError={(err: Error) => handleRenderError(current, err)}
+                    />
+                  : <div>No slide data</div>
             }
           >
             <TransitionLayer currentSlideIndex={current}>
               {visibleIndices.map((idx) => (
                 <div key={idx}>
-                  <SlideView
-                    slide={data.slides[idx]}
-                    slideWidth={data.size.width}
-                    slideHeight={data.size.height}
-                    width={dimensions.width}
-                    height={dimensions.height}
-                    onRenderError={(err: Error) => handleRenderError(idx, err)}
-                  />
+                  {renderSlide(idx)}
                 </div>
               ))}
             </TransitionLayer>

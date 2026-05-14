@@ -46,6 +46,7 @@ vi.mock('../store/db', async () => {
       overlayFrequency: 5,
       transitionType: 'none',
       transitionDuration: 500,
+    embedUrl: '',
     },
     ensureSettings: vi.fn().mockResolvedValue({
       id: 'current',
@@ -60,6 +61,7 @@ vi.mock('../store/db', async () => {
       overlayFrequency: 5,
       transitionType: 'none',
       transitionDuration: 500,
+    embedUrl: '',
     }),
   };
 });
@@ -99,6 +101,7 @@ const defaultSettings: Settings = {
   overlayFrequency: 5,
   transitionType: 'none',
   transitionDuration: 500,
+    embedUrl: '',
 };
 
 function createTransitionWrapper(settings: Settings = defaultSettings, _onSlideChange?: (idx: number) => void) {

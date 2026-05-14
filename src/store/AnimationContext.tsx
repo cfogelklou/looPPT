@@ -10,6 +10,7 @@ export interface AnimationState {
   overlayFrequency: number; // minutes
   transitionType: TransitionType;
   transitionDuration: number;
+  embedUrl: string;
 }
 
 export type AnimationAction =
@@ -20,7 +21,8 @@ export type AnimationAction =
   | { type: 'SET_OVERLAY_SPEED'; speed: number }
   | { type: 'SET_OVERLAY_FREQUENCY'; frequency: number }
   | { type: 'SET_TRANSITION_TYPE'; transitionType: TransitionType }
-  | { type: 'SET_TRANSITION_DURATION'; transitionDuration: number };
+  | { type: 'SET_TRANSITION_DURATION'; transitionDuration: number }
+  | { type: 'SET_EMBED_URL'; url: string };
 
 const VALID_PRESETS: OverlayPreset[] = ['bounce', 'fly-across', 'pulse', 'none'];
 const VALID_TRANSITION_TYPES: TransitionType[] = ['none', 'crossfade', 'slide', 'wipe', 'dissolve'];
@@ -56,6 +58,9 @@ export function sanitizeAnimationSettings(settings: Settings): AnimationState {
     ? rawFreq
     : 5;
 
+  const rawEmbedUrl = typeof settings.embedUrl === 'string' ? settings.embedUrl.trim() : '';
+  const embedUrl = rawEmbedUrl === '' || rawEmbedUrl.startsWith('https://') ? rawEmbedUrl : '';
+
   return {
     overlayEnabled: settings.overlayEnabled ?? false,
     overlayPreset: preset,
@@ -65,6 +70,7 @@ export function sanitizeAnimationSettings(settings: Settings): AnimationState {
     overlayFrequency,
     transitionType,
     transitionDuration,
+    embedUrl,
   };
 }
 
@@ -86,6 +92,11 @@ function animationReducer(state: AnimationState, action: AnimationAction): Anima
       return { ...state, transitionType: action.transitionType };
     case 'SET_TRANSITION_DURATION':
       return { ...state, transitionDuration: action.transitionDuration };
+    case 'SET_EMBED_URL': {
+      const trimmed = action.url.trim();
+      const safe = trimmed === '' || trimmed.startsWith('https://') ? trimmed : '';
+      return { ...state, embedUrl: safe };
+    }
     default:
       return state;
   }
@@ -116,6 +127,7 @@ export function AnimationProvider({ children, initialSettings }: { children: Rea
         overlayFrequency: state.overlayFrequency,
         transitionType: state.transitionType,
         transitionDuration: state.transitionDuration,
+        embedUrl: state.embedUrl,
       }).catch(console.error);
     }, 500);
 
@@ -124,7 +136,7 @@ export function AnimationProvider({ children, initialSettings }: { children: Rea
         window.clearTimeout(saveTimeoutRef.current);
       }
     };
-  }, [state.overlayEnabled, state.overlayPreset, state.overlaySize, state.overlayOpacity, state.overlaySpeed, state.overlayFrequency, state.transitionType, state.transitionDuration]);
+  }, [state.overlayEnabled, state.overlayPreset, state.overlaySize, state.overlayOpacity, state.overlaySpeed, state.overlayFrequency, state.transitionType, state.transitionDuration, state.embedUrl]);
 
   return (
     <AnimationContext.Provider value={{ state, dispatch }}>
