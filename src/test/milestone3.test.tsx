@@ -40,6 +40,7 @@ vi.mock('../store/db', async () => {
       overlaySize: 100,
       overlayOpacity: 1.0,
       overlaySpeed: 1.0,
+      overlayFrequency: 5,
       transitionType: 'none',
       transitionDuration: 500,
     },
@@ -53,6 +54,7 @@ vi.mock('../store/db', async () => {
       overlaySize: 100,
       overlayOpacity: 1.0,
       overlaySpeed: 1.0,
+      overlayFrequency: 5,
       transitionType: 'none',
       transitionDuration: 500,
     }),
@@ -92,6 +94,7 @@ const defaultSettings: Settings = {
   overlaySize: 100,
   overlayOpacity: 1.0,
   overlaySpeed: 1.0,
+  overlayFrequency: 5,
   transitionType: 'none',
   transitionDuration: 500,
 };
@@ -464,7 +467,7 @@ describe('Milestone 3: Settings UI & Uploads', () => {
     expect(img.getAttribute('src')).toContain('blob:');
     expect(img.style.width).toBe('80px');
     expect(img.style.opacity).toBe('0.7');
-    expect(img.className).toContain('animate-overlay-custom');
+    expect(img.className).toContain('animate-overlay-bounce');
 
     vi.useFakeTimers();
   });

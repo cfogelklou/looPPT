@@ -1,25 +1,37 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useAnimation } from '../store/AnimationContext';
 import { PRESET_COMPONENTS } from './overlays';
 import { db } from '../store/db';
 
-const PRESET_POSITIONS: Record<string, string> = {
-  'bounce': 'flex items-center justify-center',
-  'fly-across': 'flex items-start justify-start',
-  'pulse': 'flex items-start justify-end',
+const ANIMATION_CLASSES: Record<string, string> = {
+  'bounce': 'animate-overlay-bounce',
+  'fly-across': 'animate-overlay-fly-across',
+  'pulse': 'animate-overlay-pulse',
 };
 
-function CustomOverlayRenderer({ preset, size, opacity, speed }: {
-  preset: string;
+const BASE_DURATIONS: Record<string, number> = {
+  'bounce': 4,
+  'fly-across': 6,
+  'pulse': 2,
+};
+
+function getAnimDuration(preset: string, speed: number) {
+  const base = BASE_DURATIONS[preset] ?? 4;
+  return base / speed;
+}
+
+function CustomOverlayRenderer({ motionPreset, size, opacity, speed }: {
+  motionPreset: string;
   size: number;
   opacity: number;
   speed: number;
 }) {
   const [objectUrl, setObjectUrl] = useState<string | null>(null);
 
-  const id = parseInt(preset.replace('custom:', ''), 10);
+  const preset = motionPreset.startsWith('custom:') ? 'bounce' : motionPreset;
 
   useEffect(() => {
+    const id = parseInt(motionPreset.replace('custom:', ''), 10);
     let revoked = false;
     db.overlays.get(id).then((overlay) => {
       if (overlay && !revoked) {
@@ -29,11 +41,9 @@ function CustomOverlayRenderer({ preset, size, opacity, speed }: {
     }).catch(console.error);
     return () => {
       revoked = true;
-      if (objectUrl) URL.revokeObjectURL(objectUrl);
     };
-  }, [id]);
+  }, [motionPreset]);
 
-  // Cleanup object URL on unmount or when it changes
   useEffect(() => {
     return () => {
       if (objectUrl) URL.revokeObjectURL(objectUrl);
@@ -42,13 +52,14 @@ function CustomOverlayRenderer({ preset, size, opacity, speed }: {
 
   if (!objectUrl) return null;
 
-  const duration = 2 / speed;
+  const animClass = ANIMATION_CLASSES[preset] ?? ANIMATION_CLASSES['bounce'];
+  const duration = getAnimDuration(preset, speed);
 
   return (
     <img
       src={objectUrl}
       alt="Custom overlay"
-      className="animate-overlay-custom"
+      className={animClass}
       style={{
         width: size,
         height: size,
@@ -62,27 +73,57 @@ function CustomOverlayRenderer({ preset, size, opacity, speed }: {
 
 export function AnimationOverlay() {
   const { state } = useAnimation();
+  const [visible, setVisible] = useState(false);
+  const timerRef = useRef<number | null>(null);
+  const animTimerRef = useRef<number | null>(null);
 
-  if (!state.overlayEnabled || state.overlayPreset === 'none') {
+  const presetKey = state.overlayPreset.startsWith('custom:')
+    ? 'bounce'
+    : state.overlayPreset;
+  const animDuration = getAnimDuration(presetKey, state.overlaySpeed);
+  const frequencyMs = state.overlayFrequency * 60 * 1000;
+
+  const show = useCallback(() => {
+    setVisible(true);
+    // Hide after animation completes
+    animTimerRef.current = window.setTimeout(() => {
+      setVisible(false);
+    }, animDuration * 1000);
+  }, [animDuration]);
+
+  useEffect(() => {
+    if (!state.overlayEnabled || state.overlayPreset === 'none') {
+      setVisible(false);
+      return;
+    }
+
+    // Show immediately on first mount
+    show();
+
+    // Then show every frequencyMs
+    timerRef.current = window.setInterval(show, frequencyMs);
+
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+      if (animTimerRef.current) clearTimeout(animTimerRef.current);
+    };
+  }, [state.overlayEnabled, state.overlayPreset, frequencyMs, show]);
+
+  if (!state.overlayEnabled || state.overlayPreset === 'none' || !visible) {
     return null;
   }
 
   const isCustom = state.overlayPreset.startsWith('custom:');
-  const presetKey = isCustom ? null : state.overlayPreset as keyof typeof PRESET_COMPONENTS;
-  const SvgComponent = presetKey ? PRESET_COMPONENTS[presetKey] : null;
+  const presetComponentKey = isCustom ? null : state.overlayPreset as keyof typeof PRESET_COMPONENTS;
+  const SvgComponent = presetComponentKey ? PRESET_COMPONENTS[presetComponentKey] : null;
 
-  const positionClasses = isCustom
-    ? 'flex items-center justify-center'
-    : (PRESET_POSITIONS[state.overlayPreset] ?? 'flex items-center justify-center');
-
-  const baseDuration = state.overlayPreset === 'fly-across' ? 8 : 2;
-  const duration = baseDuration / state.overlaySpeed;
+  const duration = getAnimDuration(presetKey, state.overlaySpeed);
 
   if (isCustom) {
     return (
-      <div className={`absolute inset-0 pointer-events-none z-[5] ${positionClasses}`}>
+      <div className="absolute inset-0 pointer-events-none z-[5]">
         <CustomOverlayRenderer
-          preset={state.overlayPreset}
+          motionPreset={state.overlayPreset}
           size={state.overlaySize}
           opacity={state.overlayOpacity}
           speed={state.overlaySpeed}
@@ -91,14 +132,12 @@ export function AnimationOverlay() {
     );
   }
 
-  if (!SvgComponent) {
-    return null;
-  }
+  if (!SvgComponent) return null;
 
   const animationClass = `animate-overlay-${state.overlayPreset}`;
 
   return (
-    <div className={`absolute inset-0 pointer-events-none z-[5] ${positionClasses}`}>
+    <div className="absolute inset-0 pointer-events-none z-[5]">
       <SvgComponent
         className={animationClass}
         style={{

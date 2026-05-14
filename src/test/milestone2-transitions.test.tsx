@@ -43,6 +43,7 @@ vi.mock('../store/db', async () => {
       overlaySize: 100,
       overlayOpacity: 1.0,
       overlaySpeed: 1.0,
+      overlayFrequency: 5,
       transitionType: 'none',
       transitionDuration: 500,
     },
@@ -56,6 +57,7 @@ vi.mock('../store/db', async () => {
       overlaySize: 100,
       overlayOpacity: 1.0,
       overlaySpeed: 1.0,
+      overlayFrequency: 5,
       transitionType: 'none',
       transitionDuration: 500,
     }),
@@ -94,6 +96,7 @@ const defaultSettings: Settings = {
   overlaySize: 100,
   overlayOpacity: 1.0,
   overlaySpeed: 1.0,
+  overlayFrequency: 5,
   transitionType: 'none',
   transitionDuration: 500,
 };

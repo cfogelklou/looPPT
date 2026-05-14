@@ -382,6 +382,21 @@ export function SettingsOverlay() {
                   aria-label="Overlay Speed"
                 />
               </Box>
+
+              {/* Frequency slider */}
+              <Box sx={{ mt: 2 }}>
+                <Typography gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  Frequency: <strong>{animState.overlayFrequency} min</strong>
+                </Typography>
+                <Slider
+                  value={animState.overlayFrequency}
+                  min={0.5}
+                  max={60}
+                  step={0.5}
+                  onChange={(_, val) => animDispatch({ type: 'SET_OVERLAY_FREQUENCY', frequency: val as number })}
+                  aria-label="Overlay Frequency"
+                />
+              </Box>
             </Box>
           )}
         </Box>

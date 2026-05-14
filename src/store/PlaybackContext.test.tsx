@@ -14,7 +14,7 @@ vi.mock('./db', () => ({
 
 describe('PlaybackCoordinator', () => {
   const wrapper = ({ children }: { children: React.ReactNode }) => (
-    <PlaybackProvider initialSettings={{ id: 'current', currentSlide: 0, interval: 1, fitMode: 'contain', overlayEnabled: false, overlayPreset: 'none', overlaySize: 100, overlayOpacity: 1.0, overlaySpeed: 1.0, transitionType: 'none', transitionDuration: 500 }}>
+    <PlaybackProvider initialSettings={{ id: 'current', currentSlide: 0, interval: 1, fitMode: 'contain', overlayEnabled: false, overlayPreset: 'none', overlaySize: 100, overlayOpacity: 1.0, overlaySpeed: 1.0, overlayFrequency: 5, transitionType: 'none', transitionDuration: 500 }}>
       {children}
     </PlaybackProvider>
   );

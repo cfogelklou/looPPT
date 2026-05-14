@@ -7,6 +7,7 @@ export interface AnimationState {
   overlaySize: number;
   overlayOpacity: number;
   overlaySpeed: number;
+  overlayFrequency: number; // minutes
   transitionType: TransitionType;
   transitionDuration: number;
 }
@@ -17,6 +18,7 @@ export type AnimationAction =
   | { type: 'SET_OVERLAY_SIZE'; size: number }
   | { type: 'SET_OVERLAY_OPACITY'; opacity: number }
   | { type: 'SET_OVERLAY_SPEED'; speed: number }
+  | { type: 'SET_OVERLAY_FREQUENCY'; frequency: number }
   | { type: 'SET_TRANSITION_TYPE'; transitionType: TransitionType }
   | { type: 'SET_TRANSITION_DURATION'; transitionDuration: number };
 
@@ -49,12 +51,18 @@ export function sanitizeAnimationSettings(settings: Settings): AnimationState {
     ? rawSpeed
     : 1.0;
 
+  const rawFreq = settings.overlayFrequency;
+  const overlayFrequency = (typeof rawFreq === 'number' && rawFreq >= 0.5 && rawFreq <= 60 && Number.isFinite(rawFreq))
+    ? rawFreq
+    : 5;
+
   return {
     overlayEnabled: settings.overlayEnabled ?? false,
     overlayPreset: preset,
     overlaySize: settings.overlaySize ?? 100,
     overlayOpacity: settings.overlayOpacity ?? 1.0,
     overlaySpeed,
+    overlayFrequency,
     transitionType,
     transitionDuration,
   };
@@ -72,6 +80,8 @@ function animationReducer(state: AnimationState, action: AnimationAction): Anima
       return { ...state, overlayOpacity: action.opacity };
     case 'SET_OVERLAY_SPEED':
       return { ...state, overlaySpeed: action.speed };
+    case 'SET_OVERLAY_FREQUENCY':
+      return { ...state, overlayFrequency: action.frequency };
     case 'SET_TRANSITION_TYPE':
       return { ...state, transitionType: action.transitionType };
     case 'SET_TRANSITION_DURATION':
@@ -103,6 +113,7 @@ export function AnimationProvider({ children, initialSettings }: { children: Rea
         overlaySize: state.overlaySize,
         overlayOpacity: state.overlayOpacity,
         overlaySpeed: state.overlaySpeed,
+        overlayFrequency: state.overlayFrequency,
         transitionType: state.transitionType,
         transitionDuration: state.transitionDuration,
       }).catch(console.error);
@@ -113,7 +124,7 @@ export function AnimationProvider({ children, initialSettings }: { children: Rea
         window.clearTimeout(saveTimeoutRef.current);
       }
     };
-  }, [state.overlayEnabled, state.overlayPreset, state.overlaySize, state.overlayOpacity, state.overlaySpeed, state.transitionType, state.transitionDuration]);
+  }, [state.overlayEnabled, state.overlayPreset, state.overlaySize, state.overlayOpacity, state.overlaySpeed, state.overlayFrequency, state.transitionType, state.transitionDuration]);
 
   return (
     <AnimationContext.Provider value={{ state, dispatch }}>
