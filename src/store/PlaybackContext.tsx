@@ -37,8 +37,10 @@ function playbackReducer(state: PlaybackState, action: PlaybackAction): Playback
         totalSlides: action.totalSlides, 
         currentSlide: action.currentSlide ?? 0 
       };
-    case 'SET_TOTAL_SLIDES':
-      return { ...state, totalSlides: action.totalSlides };
+    case 'SET_TOTAL_SLIDES': {
+      const clampedSlide = Math.min(state.currentSlide, Math.max(0, action.totalSlides - 1));
+      return { ...state, totalSlides: action.totalSlides, currentSlide: clampedSlide };
+    }
     case 'NEXT_SLIDE':
       return {
         ...state,

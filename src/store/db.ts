@@ -36,6 +36,7 @@ export interface Settings {
   overlayFrequency: number; // minutes between appearances
   transitionType: TransitionType;
   transitionDuration: number;
+  embedUrl: string;
 }
 
 export class LooPPTDatabase extends Dexie {
@@ -75,6 +76,11 @@ export class LooPPTDatabase extends Dexie {
       settings: 'id',
       overlays: '++id, name, createdAt',
     }).upgrade(upgradeV6Settings);
+    this.version(7).stores({
+      presentations: '++id, name, updatedAt',
+      settings: 'id',
+      overlays: '++id, name, createdAt',
+    }).upgrade(upgradeV7Settings);
   }
 }
 
@@ -114,6 +120,14 @@ export async function upgradeV6Settings(tx: Transaction) {
   });
 }
 
+export async function upgradeV7Settings(tx: Transaction) {
+  return tx.table('settings').toCollection().modify((s: Record<string, unknown>) => {
+    if (s.embedUrl === undefined) {
+      s.embedUrl = '';
+    }
+  });
+}
+
 export const db = new LooPPTDatabase();
 
 export const INITIAL_SETTINGS: Settings = {
@@ -129,6 +143,7 @@ export const INITIAL_SETTINGS: Settings = {
   overlayFrequency: 5,
   transitionType: 'none',
   transitionDuration: 500,
+  embedUrl: '',
 };
 
 export async function ensureSettings() {
