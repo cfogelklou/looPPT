@@ -44,6 +44,7 @@ vi.mock('../store/db', () => ({
     transitionType: 'none',
     transitionDuration: 500,
     embedUrl: '',
+    wakeLockFallback: false,
   },
   ensureSettings: vi.fn().mockResolvedValue({ id: 'current', currentSlide: 0, interval: 5, overlayEnabled: false, overlayPreset: 'none', overlaySize: 100, overlayOpacity: 1.0, overlaySpeed: 1.0, overlayFrequency: 5, transitionType: 'none', transitionDuration: 500 })
 }));

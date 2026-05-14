@@ -47,6 +47,7 @@ vi.mock('../store/db', async () => {
       transitionType: 'none',
       transitionDuration: 500,
     embedUrl: '',
+    wakeLockFallback: false,
     },
     ensureSettings: vi.fn().mockResolvedValue({
       id: 'current',
@@ -62,6 +63,7 @@ vi.mock('../store/db', async () => {
       transitionType: 'none',
       transitionDuration: 500,
     embedUrl: '',
+    wakeLockFallback: false,
     }),
   };
 });
@@ -102,6 +104,7 @@ const defaultSettings: Settings = {
   transitionType: 'none',
   transitionDuration: 500,
     embedUrl: '',
+    wakeLockFallback: false,
 };
 
 function createWrapper(settings: Settings = defaultSettings) {

@@ -11,6 +11,7 @@ export interface AnimationState {
   transitionType: TransitionType;
   transitionDuration: number;
   embedUrl: string;
+  wakeLockFallback: boolean;
 }
 
 export type AnimationAction =
@@ -22,7 +23,8 @@ export type AnimationAction =
   | { type: 'SET_OVERLAY_FREQUENCY'; frequency: number }
   | { type: 'SET_TRANSITION_TYPE'; transitionType: TransitionType }
   | { type: 'SET_TRANSITION_DURATION'; transitionDuration: number }
-  | { type: 'SET_EMBED_URL'; url: string };
+  | { type: 'SET_EMBED_URL'; url: string }
+  | { type: 'SET_WAKE_LOCK_FALLBACK'; enabled: boolean };
 
 const VALID_PRESETS: OverlayPreset[] = ['bounce', 'fly-across', 'pulse', 'none'];
 const VALID_TRANSITION_TYPES: TransitionType[] = ['none', 'crossfade', 'slide', 'wipe', 'dissolve'];
@@ -71,6 +73,7 @@ export function sanitizeAnimationSettings(settings: Settings): AnimationState {
     transitionType,
     transitionDuration,
     embedUrl,
+    wakeLockFallback: settings.wakeLockFallback ?? false,
   };
 }
 
@@ -97,6 +100,8 @@ function animationReducer(state: AnimationState, action: AnimationAction): Anima
       const safe = trimmed === '' || trimmed.startsWith('https://') ? trimmed : '';
       return { ...state, embedUrl: safe };
     }
+    case 'SET_WAKE_LOCK_FALLBACK':
+      return { ...state, wakeLockFallback: action.enabled };
     default:
       return state;
   }
@@ -128,6 +133,7 @@ export function AnimationProvider({ children, initialSettings }: { children: Rea
         transitionType: state.transitionType,
         transitionDuration: state.transitionDuration,
         embedUrl: state.embedUrl,
+        wakeLockFallback: state.wakeLockFallback,
       }).catch(console.error);
     }, 500);
 
@@ -136,7 +142,7 @@ export function AnimationProvider({ children, initialSettings }: { children: Rea
         window.clearTimeout(saveTimeoutRef.current);
       }
     };
-  }, [state.overlayEnabled, state.overlayPreset, state.overlaySize, state.overlayOpacity, state.overlaySpeed, state.overlayFrequency, state.transitionType, state.transitionDuration, state.embedUrl]);
+  }, [state.overlayEnabled, state.overlayPreset, state.overlaySize, state.overlayOpacity, state.overlaySpeed, state.overlayFrequency, state.transitionType, state.transitionDuration, state.embedUrl, state.wakeLockFallback]);
 
   return (
     <AnimationContext.Provider value={{ state, dispatch }}>
