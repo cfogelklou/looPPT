@@ -235,7 +235,7 @@ export function SettingsOverlay({ onEnterKiosk, alwaysShowGear }: SettingsOverla
                 sx={{ '& .MuiSwitch-thumb': { width: 24, height: 24 } }}
               />
             }
-            label="Keep Screen Awake"
+            label="Keep Screen Awake (Video Fallback)"
             sx={{ '.MuiTypography-root': { fontSize: '1.1rem' } }}
           />
           <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.5)', mt: -1, display: 'block' }}>

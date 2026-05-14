@@ -7,7 +7,7 @@ import { DiagnosticProvider } from '../store/DiagnosticContext';
 import { AnimationOverlay } from '../components/AnimationOverlay';
 import { AnimationErrorBoundary } from '../components/AnimationErrorBoundary';
 import { SettingsOverlay } from '../components/SettingsOverlay';
-import { db, upgradeV3Settings, type Settings } from '../store/db';
+import { db, upgradeV3Settings, upgradeV8Settings, type Settings } from '../store/db';
 
 // Vite raw import for CSS content inspection
 import animationsCss from '../styles/animations.css?raw';
@@ -317,6 +317,50 @@ describe('Milestone 1: Overlays MVP', () => {
     expect(v3Record.overlayPreset).toBe('bounce');
     expect(v3Record.overlaySize).toBe(150);
     expect(v3Record.overlayOpacity).toBe(0.8);
+  });
+
+  // V8 migration: wakeLockFallback field
+  it('upgradeV8Settings adds default wakeLockFallback when missing', async () => {
+    const v7Record: Record<string, unknown> = {
+      id: 'current',
+      currentSlide: 0,
+      interval: 5,
+    };
+
+    const mockCollection = {
+      modify: vi.fn(async (fn: (s: Record<string, unknown>) => void) => {
+        fn(v7Record);
+      }),
+    };
+    const mockTx = {
+      table: vi.fn().mockReturnValue({ toCollection: () => mockCollection }),
+    };
+
+    await upgradeV8Settings(mockTx as never);
+
+    expect(v7Record.wakeLockFallback).toBe(false);
+  });
+
+  it('upgradeV8Settings preserves existing wakeLockFallback value', async () => {
+    const v8Record: Record<string, unknown> = {
+      id: 'current',
+      currentSlide: 0,
+      interval: 5,
+      wakeLockFallback: true,
+    };
+
+    const mockCollection = {
+      modify: vi.fn(async (fn: (s: Record<string, unknown>) => void) => {
+        fn(v8Record);
+      }),
+    };
+    const mockTx = {
+      table: vi.fn().mockReturnValue({ toCollection: () => mockCollection }),
+    };
+
+    await upgradeV8Settings(mockTx as never);
+
+    expect(v8Record.wakeLockFallback).toBe(true);
   });
 
   // Satisfies T9: Corrupted DB Settings Fallback

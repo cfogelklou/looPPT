@@ -2,9 +2,15 @@ import React, { useEffect, useRef } from 'react';
 
 const SILENT_VIDEO_B64 = 'GkXfo59ChoEBQveBAULygQRC84EIQoKEd2VibUKHgQJChYECGFOAZwEAAAAAAAHoEU2bdLpNu4tTq4QVSalmU6yBoU27i1OrhBZUrmtTrIHYTbuMU6uEElTDZ1OsggElTbuMU6uEHFO7a1OsggHS7AEAAAAAAABZAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAVSalmsirXsYMPQkBNgI1MYXZmNjIuMTIuMTAwV0GNTGF2ZjYyLjEyLjEwMESJiEB/QAAAAAAAFlSua8iuAQAAAAAAAD/XgQFzxYjb8KrvQFRQY5yBACK1nIN1bmSIgQCGhVZfVlA4g4EBI+ODhB3NZQDgkLCBArqBApqBAlWwhFW5gQESVMNn/HNzoGPAgGfImkWjh0VOQ09ERVJEh41MYXZmNjIuMTIuMTAwc3PWY8CLY8WI2/Cq70BUUGNnyKFFo4dFTkNPREVSRIeUTGF2YzYyLjI4LjEwMCBsaWJ2cHhnyKFFo4hEVVJBVElPTkSHkzAwOjAwOjAwLjUwMDAwMDAwMAAfQ7Z1p+eBAKOigQAAgBACAJ0BKgIAAgALxwiFhYiZhIg/ggAMDWAA/ua1ABxTu2uRu4+zgQC3iveBAfGCAabwgQM=';
 
-const SILENT_VIDEO_URL = URL.createObjectURL(
-  new Blob([Uint8Array.from(atob(SILENT_VIDEO_B64), c => c.charCodeAt(0))], { type: 'video/webm' })
-);
+let _videoUrl: string | null = null;
+function getSilentVideoUrl(): string {
+  if (!_videoUrl) {
+    _videoUrl = URL.createObjectURL(
+      new Blob([Uint8Array.from(atob(SILENT_VIDEO_B64), c => c.charCodeAt(0))], { type: 'video/webm' })
+    );
+  }
+  return _videoUrl;
+}
 
 interface WakeLockFallbackProps {
   active: boolean;
@@ -22,7 +28,7 @@ export function WakeLockFallback({ active }: WakeLockFallbackProps) {
       return;
     }
 
-    video.src = SILENT_VIDEO_URL;
+    video.src = getSilentVideoUrl();
     video.play().catch(e => console.warn('WakeLockFallback play failed:', e.message));
 
     return () => {
