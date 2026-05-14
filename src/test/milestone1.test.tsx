@@ -7,7 +7,8 @@ import { DiagnosticProvider } from '../store/DiagnosticContext';
 import { AnimationOverlay } from '../components/AnimationOverlay';
 import { AnimationErrorBoundary } from '../components/AnimationErrorBoundary';
 import { SettingsOverlay } from '../components/SettingsOverlay';
-import { db, upgradeV3Settings, type Settings } from '../store/db';
+import { WakeLockFallback } from '../components/WakeLockFallback';
+import { db, upgradeV3Settings, upgradeV8Settings, type Settings } from '../store/db';
 
 // Vite raw import for CSS content inspection
 import animationsCss from '../styles/animations.css?raw';
@@ -47,6 +48,7 @@ vi.mock('../store/db', async () => {
       transitionType: 'none',
       transitionDuration: 500,
     embedUrl: '',
+    wakeLockFallback: false,
     },
     ensureSettings: vi.fn().mockResolvedValue({
       id: 'current',
@@ -62,6 +64,7 @@ vi.mock('../store/db', async () => {
       transitionType: 'none',
       transitionDuration: 500,
     embedUrl: '',
+    wakeLockFallback: false,
     }),
   };
 });
@@ -102,6 +105,7 @@ const defaultSettings: Settings = {
   transitionType: 'none',
   transitionDuration: 500,
     embedUrl: '',
+    wakeLockFallback: false,
 };
 
 function createWrapper(settings: Settings = defaultSettings) {
@@ -316,6 +320,50 @@ describe('Milestone 1: Overlays MVP', () => {
     expect(v3Record.overlayOpacity).toBe(0.8);
   });
 
+  // V8 migration: wakeLockFallback field
+  it('upgradeV8Settings adds default wakeLockFallback when missing', async () => {
+    const v7Record: Record<string, unknown> = {
+      id: 'current',
+      currentSlide: 0,
+      interval: 5,
+    };
+
+    const mockCollection = {
+      modify: vi.fn(async (fn: (s: Record<string, unknown>) => void) => {
+        fn(v7Record);
+      }),
+    };
+    const mockTx = {
+      table: vi.fn().mockReturnValue({ toCollection: () => mockCollection }),
+    };
+
+    await upgradeV8Settings(mockTx as never);
+
+    expect(v7Record.wakeLockFallback).toBe(false);
+  });
+
+  it('upgradeV8Settings preserves existing wakeLockFallback value', async () => {
+    const v8Record: Record<string, unknown> = {
+      id: 'current',
+      currentSlide: 0,
+      interval: 5,
+      wakeLockFallback: true,
+    };
+
+    const mockCollection = {
+      modify: vi.fn(async (fn: (s: Record<string, unknown>) => void) => {
+        fn(v8Record);
+      }),
+    };
+    const mockTx = {
+      table: vi.fn().mockReturnValue({ toCollection: () => mockCollection }),
+    };
+
+    await upgradeV8Settings(mockTx as never);
+
+    expect(v8Record.wakeLockFallback).toBe(true);
+  });
+
   // Satisfies T9: Corrupted DB Settings Fallback
   it('T9: sanitizeAnimationSettings rejects invalid preset', () => {
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
@@ -476,5 +524,67 @@ describe('Milestone 1: Overlays MVP', () => {
     );
 
     expect(container.textContent).toBe('Recovered');
+  });
+
+  // WakeLockFallback component tests
+  it('WakeLockFallback renders hidden video with aria-hidden', () => {
+    const { container } = render(
+      <DiagnosticProvider>
+        <PlaybackProvider initialSettings={defaultSettings}>
+          <AnimationProvider initialSettings={defaultSettings}>
+            <WakeLockFallback active={false} />
+          </AnimationProvider>
+        </PlaybackProvider>
+      </DiagnosticProvider>
+    );
+
+    const video = container.querySelector('video');
+    expect(video).not.toBeNull();
+    expect(video?.getAttribute('aria-hidden')).toBe('true');
+    expect(video?.muted).toBe(true);
+    expect(video?.loop).toBe(true);
+    expect(video?.style.opacity).toBe('0');
+  });
+
+  // WakeLockFallback sanitization: non-boolean values default to false
+  it('sanitizeAnimationSettings treats non-boolean wakeLockFallback as false', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    const stringFalse = sanitizeAnimationSettings({ ...defaultSettings, wakeLockFallback: 'false' as unknown as boolean });
+    expect(stringFalse.wakeLockFallback).toBe(false);
+
+    const truthyOne = sanitizeAnimationSettings({ ...defaultSettings, wakeLockFallback: 1 as unknown as boolean });
+    expect(truthyOne.wakeLockFallback).toBe(false);
+
+    warnSpy.mockRestore();
+  });
+
+  // Settings UI: Keep Screen Awake toggle
+  it('toggling Keep Screen Awake dispatches SET_WAKE_LOCK_FALLBACK', async () => {
+    vi.useRealTimers();
+
+    render(
+      <DiagnosticProvider>
+        <PlaybackProvider initialSettings={defaultSettings}>
+          <AnimationProvider initialSettings={defaultSettings}>
+            <SettingsOverlay />
+          </AnimationProvider>
+        </PlaybackProvider>
+      </DiagnosticProvider>
+    );
+
+    const gearButton = screen.getByLabelText('Open Settings');
+    fireEvent.click(gearButton);
+
+    const toggle = screen.getByRole('checkbox', { name: /Keep Screen Awake/ });
+    expect(toggle).not.toBeChecked();
+
+    fireEvent.click(toggle);
+
+    await waitFor(() => {
+      expect(toggle).toBeChecked();
+    });
+
+    vi.useFakeTimers();
   });
 });

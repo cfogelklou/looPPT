@@ -37,6 +37,7 @@ export interface Settings {
   transitionType: TransitionType;
   transitionDuration: number;
   embedUrl: string;
+  wakeLockFallback: boolean;
 }
 
 export class LooPPTDatabase extends Dexie {
@@ -81,6 +82,11 @@ export class LooPPTDatabase extends Dexie {
       settings: 'id',
       overlays: '++id, name, createdAt',
     }).upgrade(upgradeV7Settings);
+    this.version(8).stores({
+      presentations: '++id, name, updatedAt',
+      settings: 'id',
+      overlays: '++id, name, createdAt',
+    }).upgrade(upgradeV8Settings);
   }
 }
 
@@ -128,6 +134,14 @@ export async function upgradeV7Settings(tx: Transaction) {
   });
 }
 
+export async function upgradeV8Settings(tx: Transaction) {
+  return tx.table('settings').toCollection().modify((s: Record<string, unknown>) => {
+    if (s.wakeLockFallback === undefined) {
+      s.wakeLockFallback = false;
+    }
+  });
+}
+
 export const db = new LooPPTDatabase();
 
 export const INITIAL_SETTINGS: Settings = {
@@ -144,6 +158,7 @@ export const INITIAL_SETTINGS: Settings = {
   transitionType: 'none',
   transitionDuration: 500,
   embedUrl: '',
+  wakeLockFallback: false,
 };
 
 export async function ensureSettings() {

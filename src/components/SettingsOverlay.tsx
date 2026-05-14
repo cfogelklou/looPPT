@@ -227,6 +227,20 @@ export function SettingsOverlay({ onEnterKiosk, alwaysShowGear }: SettingsOverla
             label="Fullscreen Mode"
             sx={{ '.MuiTypography-root': { fontSize: '1.1rem' } }}
           />
+          <FormControlLabel
+            control={
+              <Switch
+                checked={animState.wakeLockFallback}
+                onChange={(_, val) => animDispatch({ type: 'SET_WAKE_LOCK_FALLBACK', enabled: val })}
+                sx={{ '& .MuiSwitch-thumb': { width: 24, height: 24 } }}
+              />
+            }
+            label="Keep Screen Awake (Video Fallback)"
+            sx={{ '.MuiTypography-root': { fontSize: '1.1rem' } }}
+          />
+          <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.5)', mt: -1, display: 'block' }}>
+            Uses video playback fallback on devices where Wake Lock API is unsupported or unreliable.
+          </Typography>
         </Box>
 
         {onEnterKiosk && (
