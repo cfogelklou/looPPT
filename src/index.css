@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "./styles/animations.css";
 
 :root {
   font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
@@ -18,6 +19,7 @@ body, #root {
   margin: 0;
   width: 100vw;
   height: 100vh;
+  height: 100dvh;
   overflow: hidden;
 }
 

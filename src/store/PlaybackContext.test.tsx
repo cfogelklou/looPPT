@@ -14,7 +14,7 @@ vi.mock('./db', () => ({
 
 describe('PlaybackCoordinator', () => {
   const wrapper = ({ children }: { children: React.ReactNode }) => (
-    <PlaybackProvider initialSettings={{ id: 'current', currentSlide: 0, interval: 1, fitMode: 'contain' }}>
+    <PlaybackProvider initialSettings={{ id: 'current', currentSlide: 0, interval: 1, fitMode: 'contain', overlayEnabled: false, overlayPreset: 'none', overlaySize: 100, overlayOpacity: 1.0, overlaySpeed: 1.0, overlayFrequency: 5, transitionType: 'none', transitionDuration: 500, embedUrl: '', wakeLockFallback: false }}>
       {children}
     </PlaybackProvider>
   );
@@ -82,6 +82,23 @@ describe('PlaybackCoordinator', () => {
     act(() => {
       vi.advanceTimersByTime(600);
     });
+    expect(result.current.state.currentSlide).toBe(2);
+  });
+
+  it('clamps currentSlide when totalSlides decreases', () => {
+    const { result } = renderHook(() => usePlayback(), { wrapper });
+
+    act(() => {
+      result.current.dispatch({ type: 'SET_TOTAL_SLIDES', totalSlides: 5 });
+      result.current.dispatch({ type: 'GOTO_SLIDE', index: 4 });
+    });
+
+    expect(result.current.state.currentSlide).toBe(4);
+
+    act(() => {
+      result.current.dispatch({ type: 'SET_TOTAL_SLIDES', totalSlides: 3 });
+    });
+
     expect(result.current.state.currentSlide).toBe(2);
   });
 });

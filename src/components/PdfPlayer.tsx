@@ -5,6 +5,10 @@ import { usePlayback } from '../store/PlaybackContext';
 import { db } from '../store/db';
 import { PlayerShell } from './PlayerShell';
 import { useDiagnostics } from '../store/DiagnosticContext';
+import { TransitionLayer } from './TransitionLayer';
+import { TransitionErrorBoundary } from './TransitionErrorBoundary';
+import { useAnimation } from '../store/AnimationContext';
+import { EmbedSlide } from './EmbedSlide';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
   'pdfjs-dist/build/pdf.worker.min.mjs',
@@ -19,15 +23,26 @@ interface PdfPlayerProps {
 export function PdfPlayer({ wakeLockActive, onRequestWakeLock }: PdfPlayerProps) {
   const { state, dispatch } = usePlayback();
   const { logError } = useDiagnostics();
+  const { state: animState } = useAnimation();
   const [pdfDoc, setPdfDoc] = useState<PDFDocumentProxy | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [dimensions, setDimensions] = useState({ width: window.innerWidth, height: window.innerHeight });
+  const [dimensions, setDimensions] = useState({ width: document.documentElement.clientWidth, height: document.documentElement.clientHeight });
 
   const canvasRefs = useRef<Map<number, HTMLCanvasElement>>(new Map());
   const renderTasks = useRef<Map<number, { task: RenderTask; page: PDFPageProxy }>>(new Map());
   const containerRef = useRef<HTMLDivElement>(null);
   const resizeTimer = useRef<number | null>(null);
+
+  const docSlides = pdfDoc ? pdfDoc.numPages : 0;
+  const embedActive = animState.embedUrl !== '';
+
+  // Dispatch total slides (doc + embed)
+  useEffect(() => {
+    if (pdfDoc) {
+      dispatch({ type: 'SET_TOTAL_SLIDES', totalSlides: pdfDoc.numPages + (embedActive ? 1 : 0) });
+    }
+  }, [pdfDoc, embedActive, dispatch]);
 
   // Load PDF
   useEffect(() => {
@@ -41,7 +56,6 @@ export function PdfPlayer({ wakeLockActive, onRequestWakeLock }: PdfPlayerProps)
               const buffer = await pres.blob.arrayBuffer();
               const doc = await pdfjsLib.getDocument({ data: buffer }).promise;
               setPdfDoc(doc);
-              dispatch({ type: 'SET_TOTAL_SLIDES', totalSlides: doc.numPages });
             } catch (err: unknown) {
               const msg = `Failed to parse PDF file: ${err instanceof Error ? err.message : String(err)}`;
               setError(msg);
@@ -72,28 +86,30 @@ export function PdfPlayer({ wakeLockActive, onRequestWakeLock }: PdfPlayerProps)
     const handleResize = () => {
       if (resizeTimer.current) clearTimeout(resizeTimer.current);
       resizeTimer.current = window.setTimeout(() => {
-        setDimensions({ width: window.innerWidth, height: window.innerHeight });
+        setDimensions({ width: document.documentElement.clientWidth, height: document.documentElement.clientHeight });
       }, 200);
     };
     window.addEventListener('resize', handleResize);
+    document.addEventListener('fullscreenchange', handleResize);
     return () => {
       window.removeEventListener('resize', handleResize);
+      document.removeEventListener('fullscreenchange', handleResize);
       if (resizeTimer.current) clearTimeout(resizeTimer.current);
     };
   }, []);
 
   // Sliding window indices
   const visibleIndices = useMemo(() => {
-    if (!pdfDoc || pdfDoc.numPages === 0) return [];
-    if (pdfDoc.numPages === 1) return [0];
+    if (!pdfDoc || state.totalSlides === 0) return [];
+    if (state.totalSlides === 1) return [0];
 
-    const count = pdfDoc.numPages;
+    const count = state.totalSlides;
     const current = state.currentSlide % count;
     const prev = (current - 1 + count) % count;
     const next = (current + 1) % count;
 
     return Array.from(new Set([prev, current, next]));
-  }, [pdfDoc, state.currentSlide]);
+  }, [pdfDoc, state.totalSlides, state.currentSlide]);
 
   // Cancel render tasks for pages leaving the window
   useEffect(() => {
@@ -114,6 +130,7 @@ export function PdfPlayer({ wakeLockActive, onRequestWakeLock }: PdfPlayerProps)
     const dpr = window.devicePixelRatio || 1;
 
     for (const idx of visibleIndices) {
+      if (idx >= docSlides) continue;
       const canvas = canvasRefs.current.get(idx);
       if (!canvas) continue;
 
@@ -137,7 +154,9 @@ export function PdfPlayer({ wakeLockActive, onRequestWakeLock }: PdfPlayerProps)
         canvas.style.width = `${Math.floor(viewport.width)}px`;
         canvas.style.height = `${Math.floor(viewport.height)}px`;
 
-        const task = page.render({ canvas, viewport });
+        const renderViewport = page.getViewport({ scale: scale * dpr });
+
+        const task = page.render({ canvas, viewport: renderViewport });
         if (!task) return;
         renderTasks.current.set(idx, { task, page });
 
@@ -157,22 +176,34 @@ export function PdfPlayer({ wakeLockActive, onRequestWakeLock }: PdfPlayerProps)
     }
   }, [pdfDoc, visibleIndices, dimensions, logError]);
 
+  const current = state.totalSlides > 0 ? state.currentSlide % state.totalSlides : 0;
+
   return (
     <PlayerShell isLoading={isLoading} error={error} wakeLockActive={wakeLockActive} onRequestWakeLock={onRequestWakeLock}>
       <div ref={containerRef} className="w-full h-full relative">
-        {pdfDoc && visibleIndices.map((idx) => (
-          <div
-            key={idx}
-            className="absolute inset-0 flex items-center justify-center transition-opacity duration-300"
-            style={{
-              opacity: idx === state.currentSlide % pdfDoc.numPages ? 1 : 0,
-              visibility: idx === state.currentSlide % pdfDoc.numPages ? 'visible' : 'hidden',
-              zIndex: idx === state.currentSlide % pdfDoc.numPages ? 1 : 0
-            }}
+        {pdfDoc && (
+          <TransitionErrorBoundary
+            currentSlideIndex={current}
+            logError={logError}
+            fallbackSlide={
+              current >= docSlides && embedActive
+                ? <EmbedSlide url={animState.embedUrl} active />
+                : <canvas ref={(el) => { if (el) canvasRefs.current.set(current, el); }} />
+            }
           >
-            <canvas ref={(el) => { if (el) canvasRefs.current.set(idx, el); }} />
-          </div>
-        ))}
+            <TransitionLayer currentSlideIndex={current}>
+              {visibleIndices.map((idx) => (
+                <div key={idx}>
+                  {idx >= docSlides && embedActive ? (
+                    <EmbedSlide url={animState.embedUrl} active={idx === current} />
+                  ) : (
+                    <canvas ref={(el) => { if (el) canvasRefs.current.set(idx, el); }} />
+                  )}
+                </div>
+              ))}
+            </TransitionLayer>
+          </TransitionErrorBoundary>
+        )}
         {!pdfDoc && !isLoading && <div className="absolute inset-0 flex items-center justify-center text-zinc-500">No document data available</div>}
       </div>
     </PlayerShell>
