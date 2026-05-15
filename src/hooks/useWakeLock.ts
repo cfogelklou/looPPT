@@ -61,5 +61,5 @@ export function useWakeLock(enabled: boolean) {
     };
   }, [enabled, requestWakeLock, releaseWakeLock]);
 
-  return { isActive };
+  return { isActive, requestWakeLock };
 }

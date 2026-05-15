@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { usePlayback } from '../store/PlaybackContext';
 import { db, type PresentationSourceType } from '../store/db';
 import { PlayerShell } from './PlayerShell';
@@ -12,8 +12,7 @@ export function Player() {
   const { state } = usePlayback();
   const { state: animState } = useAnimation();
   const [sourceType, setSourceType] = useState<PresentationSourceType | null>(null);
-
-  useWakeLock(state.isPlaying);
+  const { isActive, requestWakeLock } = useWakeLock(state.isPlaying);
 
   useEffect(() => {
     if (state.presentationId) {
@@ -23,13 +22,20 @@ export function Player() {
     }
   }, [state.presentationId]);
 
+  const handleRequestWakeLock = useCallback(async () => {
+    try {
+      await document.documentElement.requestFullscreen();
+    } catch { /* fullscreen may already be active */ }
+    await requestWakeLock();
+  }, [requestWakeLock]);
+
   if (!state.presentationId) return null;
 
   return (
     <>
-      {sourceType === 'pdf' ? <PdfPlayer />
-        : sourceType === 'pptx' ? <PptxPlayer />
-        : <PlayerShell isLoading error={null}><div /></PlayerShell>}
+      {sourceType === 'pdf' ? <PdfPlayer wakeLockActive={isActive} onRequestWakeLock={handleRequestWakeLock} />
+        : sourceType === 'pptx' ? <PptxPlayer wakeLockActive={isActive} onRequestWakeLock={handleRequestWakeLock} />
+        : <PlayerShell isLoading error={null} wakeLockActive={isActive} onRequestWakeLock={handleRequestWakeLock}><div /></PlayerShell>}
       <WakeLockFallback active={animState.wakeLockFallback && state.isPlaying} />
     </>
   );

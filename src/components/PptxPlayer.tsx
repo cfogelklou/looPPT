@@ -11,7 +11,12 @@ import { EmbedSlide } from './EmbedSlide';
 
 const PPTX_WARNING = 'PPTX rendering is experimental. For best results, export as PDF and re-upload.';
 
-export function PptxPlayer() {
+interface PptxPlayerProps {
+  wakeLockActive?: boolean;
+  onRequestWakeLock?: () => void;
+}
+
+export function PptxPlayer({ wakeLockActive, onRequestWakeLock }: PptxPlayerProps) {
   const { state, dispatch } = usePlayback();
   const { logError } = useDiagnostics();
   const { state: animState } = useAnimation();
@@ -104,7 +109,7 @@ export function PptxPlayer() {
   };
 
   return (
-    <PlayerShell isLoading={isLoading} error={error} warning={PPTX_WARNING}>
+    <PlayerShell isLoading={isLoading} error={error} warning={PPTX_WARNING} wakeLockActive={wakeLockActive} onRequestWakeLock={onRequestWakeLock}>
       <div className="w-full h-full relative">
         {data && (
           <TransitionErrorBoundary
