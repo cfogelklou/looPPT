@@ -6,23 +6,24 @@ interface Props {
 }
 
 interface State {
-  error: Error | null;
+  errorMessage: string;
 }
 
 export class ErrorBoundary extends Component<Props, State> {
-  state: State = { error: null };
+  state: State = { errorMessage: '' };
 
-  static getDerivedStateFromError(error: Error) {
-    return { error };
+  static getDerivedStateFromError(error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    return { errorMessage };
   }
 
   render() {
-    if (this.state.error) {
+    if (this.state.errorMessage) {
       return (
         <div className="min-h-screen bg-zinc-950 flex flex-col items-center justify-center p-6 text-center">
           <div className="text-5xl mb-4">!</div>
           <h2 className="text-xl font-bold text-zinc-200 mb-2">Something went wrong</h2>
-          <p className="text-sm text-zinc-400 max-w-md mb-6">{this.state.error.message}</p>
+          <p className="text-sm text-zinc-400 max-w-md mb-6">{this.state.errorMessage}</p>
           <div className="flex gap-3">
             <button
               onClick={() => window.location.reload()}

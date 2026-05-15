@@ -5,7 +5,7 @@ export function useWakeLock(enabled: boolean) {
   const wakeLockRef = useRef<WakeLockSentinel | null>(null);
 
   const requestWakeLock = useCallback(async () => {
-    if ('wakeLock' in navigator && enabled) {
+    if ('wakeLock' in navigator) {
       try {
         wakeLockRef.current = await navigator.wakeLock.request('screen');
         setIsActive(true);
@@ -23,7 +23,7 @@ export function useWakeLock(enabled: boolean) {
         setIsActive(false);
       }
     }
-  }, [enabled]);
+  }, []);
 
   const releaseWakeLock = useCallback(async () => {
     if (wakeLockRef.current) {
