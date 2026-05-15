@@ -168,3 +168,12 @@ export async function ensureSettings() {
   }
   return settings || INITIAL_SETTINGS;
 }
+
+export async function factoryReset() {
+  try {
+    await db.delete();
+  } catch {
+    // IndexedDB may be blocked — proceed with reload anyway
+  }
+  window.location.reload();
+}

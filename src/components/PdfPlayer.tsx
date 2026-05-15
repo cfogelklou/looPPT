@@ -15,7 +15,12 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
   import.meta.url
 ).toString();
 
-export function PdfPlayer() {
+interface PdfPlayerProps {
+  wakeLockActive?: boolean;
+  onRequestWakeLock?: () => void;
+}
+
+export function PdfPlayer({ wakeLockActive, onRequestWakeLock }: PdfPlayerProps) {
   const { state, dispatch } = usePlayback();
   const { logError } = useDiagnostics();
   const { state: animState } = useAnimation();
@@ -174,7 +179,7 @@ export function PdfPlayer() {
   const current = state.totalSlides > 0 ? state.currentSlide % state.totalSlides : 0;
 
   return (
-    <PlayerShell isLoading={isLoading} error={error}>
+    <PlayerShell isLoading={isLoading} error={error} wakeLockActive={wakeLockActive} onRequestWakeLock={onRequestWakeLock}>
       <div ref={containerRef} className="w-full h-full relative">
         {pdfDoc && (
           <TransitionErrorBoundary
