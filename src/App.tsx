@@ -10,9 +10,11 @@ import { SettingsOverlay } from './components/SettingsOverlay';
 import { Layout } from 'lucide-react';
 import { useRegisterSW } from 'virtual:pwa-register/react';
 
+const appStartTime = Date.now();
+
 function AppContent() {
   const { state } = usePlayback();
-  const stableSince = useRef(Date.now());
+  const stableSince = useRef(appStartTime);
 
   const onNeedRefresh = useCallback((updateSW: (reload?: boolean) => Promise<void>) => {
     const elapsed = Date.now() - stableSince.current;
