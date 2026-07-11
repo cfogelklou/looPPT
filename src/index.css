@@ -27,3 +27,9 @@ body, #root {
   --color-background: #0a0a0a;
   --color-foreground: #ededed;
 }
+
+@media (max-height: 500px) {
+  .ad-banner-wrapper {
+    display: none !important;
+  }
+}

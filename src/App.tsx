@@ -8,6 +8,7 @@ import { Uploader } from './components/Uploader';
 import { SettingsOverlay } from './components/SettingsOverlay';
 import { Layout } from 'lucide-react';
 import { useRegisterSW } from 'virtual:pwa-register/react';
+import { AdBanner } from './components/AdBanner';
 
 function AppContent() {
   const { state } = usePlayback();
@@ -44,6 +45,11 @@ function AppContent() {
             <p className="text-zinc-500">Perpetual Presentation Loop Player</p>
           </div>
           <Uploader />
+          
+          {/* Manual AdSense Banner */}
+          <div className="mt-8 w-full max-w-[1200px] ad-banner-wrapper">
+            <AdBanner orientation="portrait" height={90} width={1200} />
+          </div>
         </div>
         <SettingsOverlay alwaysShowGear />
       </>
