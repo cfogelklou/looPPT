@@ -9,10 +9,11 @@ import { TransitionLayer } from './TransitionLayer';
 import { TransitionErrorBoundary } from './TransitionErrorBoundary';
 import { useAnimation } from '../store/AnimationContext';
 import { EmbedSlide } from './EmbedSlide';
+import { getPresentationViewport, PLAYER_VIEWPORT_CHANGE_EVENT } from '../utils/playerViewport';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
   'pdfjs-dist/build/pdf.worker.min.mjs',
-  import.meta.url
+  import.meta.url,
 ).toString();
 
 export function PdfPlayer() {
@@ -22,7 +23,7 @@ export function PdfPlayer() {
   const [pdfDoc, setPdfDoc] = useState<PDFDocumentProxy | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [dimensions, setDimensions] = useState({ width: document.documentElement.clientWidth, height: document.documentElement.clientHeight });
+  const [dimensions, setDimensions] = useState(getPresentationViewport);
 
   const canvasRefs = useRef<Map<number, HTMLCanvasElement>>(new Map());
   const renderTasks = useRef<Map<number, { task: RenderTask; page: PDFPageProxy }>>(new Map());
@@ -44,7 +45,8 @@ export function PdfPlayer() {
     if (state.presentationId) {
       setIsLoading(true);
       setError(null);
-      db.presentations.get(state.presentationId)
+      db.presentations
+        .get(state.presentationId)
         .then(async (pres) => {
           if (pres) {
             try {
@@ -81,14 +83,16 @@ export function PdfPlayer() {
     const handleResize = () => {
       if (resizeTimer.current) clearTimeout(resizeTimer.current);
       resizeTimer.current = window.setTimeout(() => {
-        setDimensions({ width: document.documentElement.clientWidth, height: document.documentElement.clientHeight });
+        setDimensions(getPresentationViewport());
       }, 200);
     };
     window.addEventListener('resize', handleResize);
     document.addEventListener('fullscreenchange', handleResize);
+    window.addEventListener(PLAYER_VIEWPORT_CHANGE_EVENT, handleResize);
     return () => {
       window.removeEventListener('resize', handleResize);
       document.removeEventListener('fullscreenchange', handleResize);
+      window.removeEventListener(PLAYER_VIEWPORT_CHANGE_EVENT, handleResize);
       if (resizeTimer.current) clearTimeout(resizeTimer.current);
     };
   }, []);
@@ -136,38 +140,43 @@ export function PdfPlayer() {
         existing.page.cleanup();
       }
 
-      pdfDoc.getPage(idx + 1).then(page => {
-        const unscaledViewport = page.getViewport({ scale: 1 });
-        const scale = Math.min(
-          dimensions.width / unscaledViewport.width,
-          dimensions.height / unscaledViewport.height
-        );
-        const viewport = page.getViewport({ scale });
+      pdfDoc
+        .getPage(idx + 1)
+        .then((page) => {
+          const unscaledViewport = page.getViewport({ scale: 1 });
+          const scale = Math.min(
+            dimensions.width / unscaledViewport.width,
+            dimensions.height / unscaledViewport.height,
+          );
+          const viewport = page.getViewport({ scale });
 
-        canvas.width = Math.floor(viewport.width * dpr);
-        canvas.height = Math.floor(viewport.height * dpr);
-        canvas.style.width = `${Math.floor(viewport.width)}px`;
-        canvas.style.height = `${Math.floor(viewport.height)}px`;
+          canvas.width = Math.floor(viewport.width * dpr);
+          canvas.height = Math.floor(viewport.height * dpr);
+          canvas.style.width = `${Math.floor(viewport.width)}px`;
+          canvas.style.height = `${Math.floor(viewport.height)}px`;
 
-        const renderViewport = page.getViewport({ scale: scale * dpr });
+          const renderViewport = page.getViewport({ scale: scale * dpr });
 
-        const task = page.render({ canvas, viewport: renderViewport });
-        if (!task) return;
-        renderTasks.current.set(idx, { task, page });
+          const task = page.render({ canvas, viewport: renderViewport });
+          if (!task) return;
+          renderTasks.current.set(idx, { task, page });
 
-        task.promise.catch((err: unknown) => {
-          const errName = (err as { name?: string })?.name;
-          if (errName !== 'RenderingCancelledException') {
-            const msg = `Page ${idx + 1} render error: ${err instanceof Error ? err.message : String(err)}`;
-            logError(msg);
-          }
-        }).finally(() => {
-          renderTasks.current.delete(idx);
+          task.promise
+            .catch((err: unknown) => {
+              const errName = (err as { name?: string })?.name;
+              if (errName !== 'RenderingCancelledException') {
+                const msg = `Page ${idx + 1} render error: ${err instanceof Error ? err.message : String(err)}`;
+                logError(msg);
+              }
+            })
+            .finally(() => {
+              renderTasks.current.delete(idx);
+            });
+        })
+        .catch((err: unknown) => {
+          const msg = `Page ${idx + 1} load error: ${err instanceof Error ? err.message : String(err)}`;
+          logError(msg);
         });
-      }).catch((err: unknown) => {
-        const msg = `Page ${idx + 1} load error: ${err instanceof Error ? err.message : String(err)}`;
-        logError(msg);
-      });
     }
   }, [pdfDoc, visibleIndices, dimensions, logError]);
 
@@ -175,15 +184,21 @@ export function PdfPlayer() {
 
   return (
     <PlayerShell isLoading={isLoading} error={error}>
-      <div ref={containerRef} className="w-full h-full relative">
+      <div ref={containerRef} className='w-full h-full relative'>
         {pdfDoc && (
           <TransitionErrorBoundary
             currentSlideIndex={current}
             logError={logError}
             fallbackSlide={
-              current >= docSlides && embedActive
-                ? <EmbedSlide url={animState.embedUrl} active />
-                : <canvas ref={(el) => { if (el) canvasRefs.current.set(current, el); }} />
+              current >= docSlides && embedActive ? (
+                <EmbedSlide url={animState.embedUrl} active />
+              ) : (
+                <canvas
+                  ref={(el) => {
+                    if (el) canvasRefs.current.set(current, el);
+                  }}
+                />
+              )
             }
           >
             <TransitionLayer currentSlideIndex={current}>
@@ -192,14 +207,22 @@ export function PdfPlayer() {
                   {idx >= docSlides && embedActive ? (
                     <EmbedSlide url={animState.embedUrl} active={idx === current} />
                   ) : (
-                    <canvas ref={(el) => { if (el) canvasRefs.current.set(idx, el); }} />
+                    <canvas
+                      ref={(el) => {
+                        if (el) canvasRefs.current.set(idx, el);
+                      }}
+                    />
                   )}
                 </div>
               ))}
             </TransitionLayer>
           </TransitionErrorBoundary>
         )}
-        {!pdfDoc && !isLoading && <div className="absolute inset-0 flex items-center justify-center text-zinc-500">No document data available</div>}
+        {!pdfDoc && !isLoading && (
+          <div className='absolute inset-0 flex items-center justify-center text-zinc-500'>
+            No document data available
+          </div>
+        )}
       </div>
     </PlayerShell>
   );

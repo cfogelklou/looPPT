@@ -8,8 +8,10 @@ import { TransitionLayer } from './TransitionLayer';
 import { TransitionErrorBoundary } from './TransitionErrorBoundary';
 import { useAnimation } from '../store/AnimationContext';
 import { EmbedSlide } from './EmbedSlide';
+import { getPresentationViewport, PLAYER_VIEWPORT_CHANGE_EVENT } from '../utils/playerViewport';
 
-const PPTX_WARNING = 'PPTX rendering is experimental. For best results, export as PDF and re-upload.';
+const PPTX_WARNING =
+  'PPTX rendering is experimental. For best results, export as PDF and re-upload.';
 
 export function PptxPlayer() {
   const { state, dispatch } = usePlayback();
@@ -18,15 +20,17 @@ export function PptxPlayer() {
   const [data, setData] = useState<PPTXData | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [dimensions, setDimensions] = useState({ width: document.documentElement.clientWidth, height: document.documentElement.clientHeight });
+  const [dimensions, setDimensions] = useState(getPresentationViewport);
 
   useEffect(() => {
-    const handleResize = () => setDimensions({ width: document.documentElement.clientWidth, height: document.documentElement.clientHeight });
+    const handleResize = () => setDimensions(getPresentationViewport());
     window.addEventListener('resize', handleResize);
     document.addEventListener('fullscreenchange', handleResize);
+    window.addEventListener(PLAYER_VIEWPORT_CHANGE_EVENT, handleResize);
     return () => {
       window.removeEventListener('resize', handleResize);
       document.removeEventListener('fullscreenchange', handleResize);
+      window.removeEventListener(PLAYER_VIEWPORT_CHANGE_EVENT, handleResize);
     };
   }, []);
 
@@ -34,7 +38,8 @@ export function PptxPlayer() {
     if (state.presentationId) {
       setIsLoading(true);
       setError(null);
-      db.presentations.get(state.presentationId)
+      db.presentations
+        .get(state.presentationId)
         .then(async (pres) => {
           if (pres) {
             try {
@@ -64,7 +69,10 @@ export function PptxPlayer() {
 
   useEffect(() => {
     if (data) {
-      dispatch({ type: 'SET_TOTAL_SLIDES', totalSlides: data.slides.length + (embedActive ? 1 : 0) });
+      dispatch({
+        type: 'SET_TOTAL_SLIDES',
+        totalSlides: data.slides.length + (embedActive ? 1 : 0),
+      });
     }
   }, [data, embedActive, dispatch]);
 
@@ -80,10 +88,13 @@ export function PptxPlayer() {
     return Array.from(new Set([prev, current, next]));
   }, [data, state.totalSlides, state.currentSlide]);
 
-  const handleRenderError = useCallback((slideIndex: number, err: Error) => {
-    const msg = `Slide ${slideIndex} render error: ${err.message}`;
-    logError(msg);
-  }, [logError]);
+  const handleRenderError = useCallback(
+    (slideIndex: number, err: Error) => {
+      const msg = `Slide ${slideIndex} render error: ${err.message}`;
+      logError(msg);
+    },
+    [logError],
+  );
 
   const current = state.totalSlides > 0 ? state.currentSlide % state.totalSlides : 0;
 
@@ -105,36 +116,40 @@ export function PptxPlayer() {
 
   return (
     <PlayerShell isLoading={isLoading} error={error} warning={PPTX_WARNING}>
-      <div className="w-full h-full relative">
+      <div className='w-full h-full relative'>
         {data && (
           <TransitionErrorBoundary
             currentSlideIndex={current}
             logError={logError}
             fallbackSlide={
-              current >= docSlides && embedActive
-                ? <EmbedSlide url={animState.embedUrl} active />
-                : docSlides > 0
-                  ? <SlideView
-                      slide={data.slides[Math.min(current, docSlides - 1)]}
-                      slideWidth={data.size.width}
-                      slideHeight={data.size.height}
-                      width={dimensions.width}
-                      height={dimensions.height}
-                      onRenderError={(err: Error) => handleRenderError(current, err)}
-                    />
-                  : <div>No slide data</div>
+              current >= docSlides && embedActive ? (
+                <EmbedSlide url={animState.embedUrl} active />
+              ) : docSlides > 0 ? (
+                <SlideView
+                  slide={data.slides[Math.min(current, docSlides - 1)]}
+                  slideWidth={data.size.width}
+                  slideHeight={data.size.height}
+                  width={dimensions.width}
+                  height={dimensions.height}
+                  onRenderError={(err: Error) => handleRenderError(current, err)}
+                />
+              ) : (
+                <div>No slide data</div>
+              )
             }
           >
             <TransitionLayer currentSlideIndex={current}>
               {visibleIndices.map((idx) => (
-                <div key={idx}>
-                  {renderSlide(idx)}
-                </div>
+                <div key={idx}>{renderSlide(idx)}</div>
               ))}
             </TransitionLayer>
           </TransitionErrorBoundary>
         )}
-        {!data && !isLoading && <div className="absolute inset-0 flex items-center justify-center text-zinc-500">No slide data available</div>}
+        {!data && !isLoading && (
+          <div className='absolute inset-0 flex items-center justify-center text-zinc-500'>
+            No slide data available
+          </div>
+        )}
       </div>
     </PlayerShell>
   );

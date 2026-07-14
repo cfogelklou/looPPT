@@ -21,12 +21,15 @@ function AppContent() {
 
   // R5: Periodically check for updates (every 1 hour)
   useEffect(() => {
-    const interval = setInterval(() => {
-      if (navigator.onLine) {
-        // This will trigger onNeedRefresh if an update is found
-        updateServiceWorker();
-      }
-    }, 60 * 60 * 1000);
+    const interval = setInterval(
+      () => {
+        if (navigator.onLine) {
+          // This will trigger onNeedRefresh if an update is found
+          updateServiceWorker();
+        }
+      },
+      60 * 60 * 1000,
+    );
 
     return () => clearInterval(interval);
   }, [updateServiceWorker]);
@@ -34,22 +37,36 @@ function AppContent() {
   if (!state.presentationId) {
     return (
       <>
-        <div className="min-h-screen bg-background text-foreground flex flex-col items-center justify-center p-4">
-          <div className="mb-12 text-center">
-            <div className="flex items-center justify-center mb-4">
-              <div className="p-3 bg-blue-600 rounded-2xl shadow-xl shadow-blue-900/20">
-                <Layout className="w-10 h-10 text-white" />
+        <div className='min-h-screen bg-background text-foreground flex flex-col lg:flex-row overflow-hidden'>
+          <main className='flex-1 min-w-0 flex flex-col items-center justify-center p-4'>
+            <div className='mb-8 text-center'>
+              <img
+                src='/looppt/images/looppt-feature.png'
+                alt='Digital signage display running a looping LooPPT presentation'
+                className='w-36 h-44 object-cover object-top rounded-2xl border border-zinc-700/70 shadow-2xl shadow-black/40 mx-auto mb-6'
+              />
+              <div className='flex items-center justify-center mb-4'>
+                <div className='p-3 bg-blue-600 rounded-2xl shadow-xl shadow-blue-900/20'>
+                  <Layout className='w-10 h-10 text-white' />
+                </div>
               </div>
+              <h1 className='text-4xl font-bold tracking-tight mb-2'>LooPPT</h1>
+              <p className='text-zinc-500'>Perpetual Presentation Loop Player</p>
             </div>
-            <h1 className="text-4xl font-bold tracking-tight mb-2">LooPPT</h1>
-            <p className="text-zinc-500">Perpetual Presentation Loop Player</p>
-          </div>
-          <Uploader />
-          
-          {/* Manual AdSense Banner */}
-          <div className="mt-8 w-full max-w-[1200px] ad-banner-wrapper">
-            <AdBanner orientation="portrait" height={90} width={1200} />
-          </div>
+            <Uploader />
+          </main>
+
+          <aside
+            className='flex-shrink-0 h-[90px] lg:h-auto lg:w-[160px]'
+            aria-label='Advertisement'
+          >
+            <div className='h-full lg:hidden'>
+              <AdBanner orientation='portrait' height={90} width={1200} />
+            </div>
+            <div className='hidden lg:block h-full'>
+              <AdBanner orientation='landscape' height={0} width={160} />
+            </div>
+          </aside>
         </div>
         <SettingsOverlay alwaysShowGear />
       </>
@@ -68,8 +85,8 @@ export default function App() {
 
   if (!initialSettings) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="w-12 h-12 border-4 border-zinc-800 border-t-blue-500 rounded-full animate-spin" />
+      <div className='min-h-screen bg-background flex items-center justify-center'>
+        <div className='w-12 h-12 border-4 border-zinc-800 border-t-blue-500 rounded-full animate-spin' />
       </div>
     );
   }

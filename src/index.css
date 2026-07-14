@@ -1,5 +1,5 @@
-@import "tailwindcss";
-@import "./styles/animations.css";
+@import 'tailwindcss';
+@import './styles/animations.css';
 
 :root {
   font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
@@ -15,7 +15,8 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
-body, #root {
+body,
+#root {
   margin: 0;
   width: 100vw;
   height: 100vh;
@@ -26,10 +27,4 @@ body, #root {
 @theme {
   --color-background: #0a0a0a;
   --color-foreground: #ededed;
-}
-
-@media (max-height: 500px) {
-  .ad-banner-wrapper {
-    display: none !important;
-  }
 }
