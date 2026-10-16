@@ -14,7 +14,6 @@ import {
 import { SettingsOverlay } from './SettingsOverlay';
 import { AnimationOverlay } from './AnimationOverlay';
 import { AnimationErrorBoundary } from './AnimationErrorBoundary';
-import { AdBanner } from './AdBanner';
 import { KIOSK_MODE_CLASS, PLAYER_VIEWPORT_CHANGE_EVENT } from '../utils/playerViewport';
 
 interface PlayerShellProps {
@@ -154,17 +153,6 @@ export function PlayerShell({ isLoading, error, warning, children }: PlayerShell
           </div>
         )}
       </div>
-
-      {!isKiosk && (
-        <aside className='flex-shrink-0 h-[90px] lg:h-full lg:w-[160px]' aria-label='Advertisement'>
-          <div className='lg:hidden h-full'>
-            <AdBanner orientation='portrait' height={90} width={1200} />
-          </div>
-          <div className='hidden lg:block h-full'>
-            <AdBanner orientation='landscape' height={0} width={160} />
-          </div>
-        </aside>
-      )}
     </div>
   );
 }
