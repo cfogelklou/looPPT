@@ -54,18 +54,16 @@ export function PdfPlayer() {
               const doc = await pdfjsLib.getDocument({ data: buffer }).promise;
               setPdfDoc(doc);
             } catch (err: unknown) {
-              const msg = `Failed to parse PDF file: ${err instanceof Error ? err.message : String(err)}`;
-              setError(msg);
-              logError(msg);
+              setError("Couldn't read that PDF. The file may be damaged or password-protected.");
+              logError(`Failed to parse PDF file: ${err instanceof Error ? err.message : String(err)}`);
             }
           } else {
             setError('Presentation not found in storage.');
           }
         })
         .catch((err: unknown) => {
-          const msg = `Database error: ${err instanceof Error ? err.message : String(err)}`;
-          setError(msg);
-          logError(msg);
+          setError("Couldn't load the presentation from storage. Try re-uploading the file.");
+          logError(`Database error: ${err instanceof Error ? err.message : String(err)}`);
         })
         .finally(() => setIsLoading(false));
     }

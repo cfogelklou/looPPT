@@ -136,7 +136,7 @@ export function SettingsOverlay({ onEnterKiosk, alwaysShowGear }: SettingsOverla
       setUiError(
         err instanceof SlideshowIOError
           ? err.message
-          : 'Export failed unexpectedly.',
+          : 'Export failed. Please try again.',
       );
     } finally {
       setIoBusy(null);
@@ -160,7 +160,7 @@ export function SettingsOverlay({ onEnterKiosk, alwaysShowGear }: SettingsOverla
       setUiError(
         err instanceof SlideshowIOError
           ? err.message
-          : 'Import failed unexpectedly.',
+          : 'Import failed. Please try again.',
       );
       setIoBusy(null);
     }

@@ -56,9 +56,8 @@ export function PptxPlayer() {
           }
         })
         .catch((err: unknown) => {
-          const msg = `Database error: ${err instanceof Error ? err.message : String(err)}`;
-          setError(msg);
-          logError(msg);
+          setError("Couldn't load the presentation from storage. Try re-uploading the file.");
+          logError(`Database error: ${err instanceof Error ? err.message : String(err)}`);
         })
         .finally(() => setIsLoading(false));
     }
