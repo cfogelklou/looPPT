@@ -11,7 +11,8 @@ export function ArrowOverlay({ className, style }: ArrowOverlayProps) {
       <defs>
         <linearGradient id="arrow-grad" x1="0%" y1="0%" x2="100%" y2="100%">
           <stop offset="0%" stopColor="#3b82f6" />
-          <stop offset="100%" stopColor="#8b5cf6" />
+          {/* unslop-ignore: app accent is Tailwind blue; end stop stays in the blue family (blue-400), not AI violet */}
+          <stop offset="100%" stopColor="#60a5fa" />
         </linearGradient>
       </defs>
       <polygon
