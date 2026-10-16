@@ -8,7 +8,6 @@ import { Uploader } from './components/Uploader';
 import { SettingsOverlay } from './components/SettingsOverlay';
 import { Layout } from 'lucide-react';
 import { useRegisterSW } from 'virtual:pwa-register/react';
-import { AdBanner } from './components/AdBanner';
 
 function AppContent() {
   const { state } = usePlayback();
@@ -55,18 +54,6 @@ function AppContent() {
             </div>
             <Uploader />
           </main>
-
-          <aside
-            className='flex-shrink-0 h-[90px] lg:h-auto lg:w-[160px]'
-            aria-label='Advertisement'
-          >
-            <div className='h-full lg:hidden'>
-              <AdBanner orientation='portrait' height={90} width={1200} />
-            </div>
-            <div className='hidden lg:block h-full'>
-              <AdBanner orientation='landscape' height={0} width={160} />
-            </div>
-          </aside>
         </div>
         <SettingsOverlay alwaysShowGear />
       </>
