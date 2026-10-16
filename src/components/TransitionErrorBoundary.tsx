@@ -32,7 +32,7 @@ export class TransitionErrorBoundary extends React.Component<Props, State> {
             {this.props.fallbackSlide}
           </div>
           <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 2, background: 'rgba(0,0,0,0.7)', color: '#ffab40', fontSize: 12, padding: '4px 8px' }}>
-            Transition error — showing slide without transitions
+            Transition error: showing slide without transitions
           </div>
         </div>
       );
